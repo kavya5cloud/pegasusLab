@@ -1,16 +1,17 @@
 import type { CSSProperties, ReactNode } from "react";
 
 const ICONS: Record<string, ReactNode> = {
-  // Five-armed splat mark — chunky round-capped arms radiating from a
-  // filled core, matching the pegasus lab. wordmark image.
+  // pegasus lab. splat mark — six stubby round-capped arms of uneven
+  // length around a heavy core; the right arm reaches longest.
   logo: (
-    <g strokeWidth={5.4} strokeLinecap="round">
-      <path d="M12 12 13.6 5.4" />
-      <path d="M12 12l6.8-.6" />
-      <path d="M12 12l3.4 6" />
-      <path d="M12 12l-5.6 4.6" />
-      <path d="M12 12 5.8 8.2" />
-      <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+    <g strokeWidth={4.9} strokeLinecap="round">
+      <path d="M12 12l1.6-6.4" />
+      <path d="M12 12 6.6 6.8" />
+      <path d="M12 12l-7 .6" />
+      <path d="M12 12l-4.6 5.6" />
+      <path d="M12 12l3.2 6.2" />
+      <path d="M12 12l7.6-.8" />
+      <circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none" />
     </g>
   ),
   idea: (
