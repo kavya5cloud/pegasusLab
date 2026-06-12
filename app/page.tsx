@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { getUser } from "@/lib/auth";
 
-const LOGOS = ["Northbeam", "Quill", "Hexa", "Lumen", "Drift", "Orbit"];
+const STACK = ["GitHub", "Figma", "Next.js", "React", "PostgreSQL", "Stripe"];
 
 export default function Landing() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function Landing() {
               width={110}
               height={92}
               priority
-              className="brightness-0 invert h-14 w-auto -my-4"
+              className="brightness-0 invert h-20 w-auto -my-6"
             />
           </Link>
           <div className="hidden md:flex items-center gap-7 text-[13px] text-white/80">
@@ -118,9 +118,12 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Logo strip */}
+        {/* Integrations strip */}
         <div className="relative z-10 flex items-center justify-center gap-8 md:gap-12 flex-wrap px-6 pb-8 text-white/75">
-          {LOGOS.map((l) => (
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/50">
+            Works with
+          </span>
+          {STACK.map((l) => (
             <span key={l} className="text-[13px] font-semibold tracking-tight">
               {l}
             </span>
