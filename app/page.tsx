@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { getUser } from "@/lib/auth";
@@ -140,10 +141,17 @@ export default function Landing() {
       </section>
 
       <footer
-        className="border-t py-6 text-center text-[11px]"
+        className="border-t py-8 flex flex-col items-center gap-1 text-[11px]"
         style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)" }}
       >
-        pegasus lab. — the intelligence layer between ideas and software
+        <Image
+          src="/pegasuslogo.png"
+          alt="pegasus lab."
+          width={130}
+          height={109}
+          className="-my-4"
+        />
+        the intelligence layer between ideas and software
       </footer>
     </main>
   );

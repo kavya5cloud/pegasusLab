@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { getUser, signIn } from "@/lib/auth";
@@ -105,12 +106,13 @@ export default function AuthPage() {
               <Icon name="arrow-right" size={13} strokeWidth={2.2} />
             </button>
             <div className="flex items-center justify-between pt-1">
-              <span
-                className="text-[10px] font-medium border rounded-md px-1.5 py-0.5 text-neutral-500"
-                style={{ borderColor: "var(--hairline)" }}
-              >
-                pegasus lab.
-              </span>
+              <Image
+                src="/pegasuslogo.png"
+                alt="pegasus lab."
+                width={72}
+                height={60}
+                className="-my-3 -ml-2"
+              />
               <button
                 type="button"
                 onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
