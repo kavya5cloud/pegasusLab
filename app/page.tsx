@@ -93,13 +93,12 @@ export default function Landing() {
               className="w-full text-[13px] outline-none placeholder:text-neutral-400 text-neutral-900 bg-transparent"
             />
             <div className="flex items-center justify-between mt-4">
-              <Image
-                src="/pegasuslogo.png"
-                alt="pegasus lab."
-                width={66}
-                height={55}
-                className="-my-2.5 -ml-1.5"
-              />
+              <span
+                className="text-[10px] font-medium border rounded-md px-1.5 py-0.5 text-neutral-500"
+                style={{ borderColor: "var(--hairline)" }}
+              >
+                pegasus lab.
+              </span>
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-1.5"
