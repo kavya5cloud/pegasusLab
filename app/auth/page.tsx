@@ -1,0 +1,127 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Icon } from "@/components/icons";
+import { getUser, signIn } from "@/lib/auth";
+
+export default function AuthPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [next, setNext] = useState("/projects");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "signup") setMode("signup");
+    const n = params.get("next");
+    if (n) setNext(n);
+    if (getUser()) router.replace(n || "/projects");
+  }, [router]);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    signIn({
+      name: name.trim() || email.split("@")[0],
+      email: email.trim(),
+    });
+    router.push(next);
+  }
+
+  return (
+    <main className="flex-1 min-h-screen flex flex-col" style={{ background: "var(--paper)" }}>
+      <section className="sky-hero relative mx-3 my-3 rounded-3xl overflow-hidden flex-1 flex flex-col">
+        {/* Nav — same language as the landing */}
+        <nav className="relative z-10 flex items-center justify-between px-6 md:px-10 py-5">
+          <Link href="/" className="flex items-center gap-2 text-white">
+            <Icon name="logo" size={20} strokeWidth={2} />
+            <span className="text-sm font-semibold tracking-tight">pegasus lab.</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-7 text-[13px] text-white/80">
+            <Link href="/" className="hover:text-white">Platform</Link>
+            <Link href="/" className="hover:text-white">Blueprint</Link>
+            <Link href="/" className="hover:text-white">Docs</Link>
+          </div>
+          <button
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            className="text-[13px] font-medium bg-white text-black rounded-full px-4 py-1.5 hover:bg-white/90"
+          >
+            {mode === "signin" ? "Get started" : "Sign in"}
+          </button>
+        </nav>
+
+        {/* Centered card */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-16">
+          <h1 className="serif text-white text-4xl md:text-5xl text-center leading-[1.08]">
+            {mode === "signin" ? "Welcome back to" : "Welcome to"}
+            <br />
+            <span className="text-white/70">the future of software.</span>
+          </h1>
+          <p className="text-white/85 text-[13px] text-center mt-4 mb-8 max-w-sm">
+            {mode === "signin"
+              ? "Sign in to open your whiteboards and blueprints."
+              : "Create an account — drop your first idea in under a minute."}
+          </p>
+
+          <form
+            onSubmit={submit}
+            className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5 space-y-3"
+          >
+            {mode === "signup" && (
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none border focus:border-blue-500 transition-colors text-neutral-900"
+                style={{ borderColor: "var(--hairline)" }}
+              />
+            )}
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              placeholder="Email address"
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none border focus:border-blue-500 transition-colors text-neutral-900"
+              style={{ borderColor: "var(--hairline)" }}
+            />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              placeholder="Password"
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none border focus:border-blue-500 transition-colors text-neutral-900"
+              style={{ borderColor: "var(--hairline)" }}
+            />
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl py-3 flex items-center justify-center gap-2"
+            >
+              {mode === "signin" ? "Sign in" : "Create account"}
+              <Icon name="arrow-right" size={13} strokeWidth={2.2} />
+            </button>
+            <div className="flex items-center justify-between pt-1">
+              <span
+                className="text-[10px] font-medium border rounded-md px-1.5 py-0.5 text-neutral-500"
+                style={{ borderColor: "var(--hairline)" }}
+              >
+                pegasus lab.
+              </span>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                className="text-[12px] text-neutral-500 underline hover:text-black"
+              >
+                {mode === "signin" ? "Create an account" : "Sign in instead"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  );
+}
