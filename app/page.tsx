@@ -29,9 +29,16 @@ export default function Landing() {
       <section className="sky-hero relative mx-3 mt-3 rounded-3xl overflow-hidden">
         {/* Nav */}
         <nav className="relative z-10 flex items-center justify-between px-6 md:px-10 py-5">
-          <Link href="/" className="flex items-center gap-2 text-white">
-            <Icon name="logo" size={20} strokeWidth={2} />
-            <span className="text-sm font-semibold tracking-tight">pegasus lab.</span>
+          <Link href="/" className="flex items-center text-white">
+            {/* brightness-0 + invert renders the black lockup white on the sky */}
+            <Image
+              src="/pegasuslogo.png"
+              alt="pegasus lab."
+              width={110}
+              height={92}
+              priority
+              className="brightness-0 invert h-14 w-auto -my-4"
+            />
           </Link>
           <div className="hidden md:flex items-center gap-7 text-[13px] text-white/80">
             <a href="#how" className="hover:text-white">Platform</a>
@@ -86,12 +93,13 @@ export default function Landing() {
               className="w-full text-[13px] outline-none placeholder:text-neutral-400 text-neutral-900 bg-transparent"
             />
             <div className="flex items-center justify-between mt-4">
-              <span
-                className="text-[10px] font-medium border rounded-md px-1.5 py-0.5 text-neutral-500"
-                style={{ borderColor: "var(--hairline)" }}
-              >
-                pegasus lab.
-              </span>
+              <Image
+                src="/pegasuslogo.png"
+                alt="pegasus lab."
+                width={66}
+                height={55}
+                className="-my-2.5 -ml-1.5"
+              />
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-1.5"
