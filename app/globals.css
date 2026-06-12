@@ -45,10 +45,10 @@ body {
 
 /* Application surface (workspace, project pages) — light paper theme */
 .workspace {
-  --background: #faf9f6;
+  --background: #ffffff;
   --panel: #ffffff;
-  --panel-2: #f5f3ed;
-  --line: #e4e1d8;
+  --panel-2: #f8f8f8;
+  --line: #e6e6e6;
   --foreground: #161616;
   --muted: #84817a;
   --accent: #141414;

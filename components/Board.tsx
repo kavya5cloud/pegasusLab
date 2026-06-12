@@ -296,7 +296,7 @@ function BoardInner({
           addItem("idea", screenToFlowPosition({ x: e.clientX, y: e.clientY }));
         }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#d8d4c8" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#e3e3e3" />
         <Controls showInteractive={false} />
       </ReactFlow>
 

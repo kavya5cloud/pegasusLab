@@ -7,6 +7,9 @@ import BlueprintCanvas from "./BlueprintCanvas";
 import GapPanel from "./GapPanel";
 import CodePanel from "./CodePanel";
 import ShipPanel from "./ShipPanel";
+import BuildModal from "./BuildModal";
+import ChatPanel from "./ChatPanel";
+import Image from "next/image";
 import { Icon } from "./icons";
 import type { BoardItem, Gap, Project } from "@/lib/types";
 
@@ -25,6 +28,8 @@ export default function Workspace({ projectId }: { projectId: string }) {
 
   const [codeOpen, setCodeOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
+  const [buildModalOpen, setBuildModalOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [codeTitle, setCodeTitle] = useState("");
   const [codeContent, setCodeContent] = useState("");
   const [generatingGapId, setGeneratingGapId] = useState<string | null>(null);
@@ -182,9 +187,15 @@ export default function Workspace({ projectId }: { projectId: string }) {
         style={{ borderBottom: "1px solid var(--line)", background: "var(--panel)" }}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/projects" className="flex items-center gap-1.5 text-sm font-semibold tracking-tight shrink-0" style={{ color: "var(--accent)" }}>
-            <Icon name="logo" size={15} />
-            pegasus lab.
+          <Link href="/projects" className="flex items-center shrink-0">
+            <Image
+              src="/pegasuslogo.png"
+              alt="pegasus lab."
+              width={88}
+              height={74}
+              className="h-12 w-auto -my-3"
+              priority
+            />
           </Link>
           <span style={{ color: "var(--line)" }}>/</span>
           <h1 className="text-sm font-medium truncate">{project.name}</h1>
@@ -240,7 +251,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
             </button>
           )}
           <button
-            onClick={build}
+            onClick={() => setBuildModalOpen(true)}
             disabled={analyzing}
             className="text-xs font-semibold px-4 py-1.5 rounded-full disabled:opacity-50"
             style={{ background: "var(--accent)", color: "#ffffff" }}
@@ -367,6 +378,32 @@ export default function Workspace({ projectId }: { projectId: string }) {
             </div>
           </aside>
         </div>
+      )}
+
+      {buildModalOpen && (
+        <BuildModal
+          rebuild={!!bp}
+          onClose={() => setBuildModalOpen(false)}
+          onBlueprint={() => {
+            setBuildModalOpen(false);
+            build();
+          }}
+          onChat={() => {
+            setBuildModalOpen(false);
+            setChatOpen(true);
+          }}
+        />
+      )}
+
+      {chatOpen && (
+        <ChatPanel
+          project={project}
+          onClose={() => setChatOpen(false)}
+          onRunBuild={() => {
+            setChatOpen(false);
+            build();
+          }}
+        />
       )}
 
       {shipOpen && <ShipPanel project={project} onClose={() => setShipOpen(false)} />}

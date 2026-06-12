@@ -119,3 +119,17 @@ export const { GET, POST } = handlers;
 - Add \`AUTH_SECRET\` and \`AUTH_GITHUB_ID\` / \`AUTH_GITHUB_SECRET\` to .env.local
 - Wrap protected routes with the exported \`auth\` middleware.
 `;
+
+export function demoChatReply(question: string): string {
+  return [
+    `Good question. (Demo mode — set ANTHROPIC_API_KEY for the real build copilot.)`,
+    ``,
+    `Here is how I would approach "${question.slice(0, 80)}":`,
+    ``,
+    `1. Close the critical gap first — authentication. Nothing else on the blueprint is safe to ship while the records API is open.`,
+    `2. Wire billing next: the Stripe webhook and a subscriptions table unlock revenue, and both are isolated from the rest of the graph.`,
+    `3. Notifications and pagination are fast follows — each is a one-card fix on the board.`,
+    ``,
+    `Open the Gaps panel in Blueprint view and hit "Generate code" on any of these — I will write the integration end to end.`,
+  ].join("\n");
+}

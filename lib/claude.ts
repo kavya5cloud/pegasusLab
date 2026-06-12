@@ -240,3 +240,47 @@ export function streamGapCode(project: Project, gap: Gap) {
     ],
   });
 }
+
+const CHAT_SYSTEM = `You are Pegasus, the build copilot inside pegasus lab. The user is building an application from a whiteboard of ideas, code, repos and designs. You have the full project context below.
+
+Help them: refine the blueprint, decide what to build first, reason about architecture and databases, and plan the ship. Be concrete and concise — short paragraphs, no filler. When you reference parts of the app, use the blueprint node labels. When they ask for code, give real code.`;
+
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export function streamChat(project: Project, messages: ChatTurn[]) {
+  const bp = project.blueprint;
+  const context = {
+    name: project.name,
+    description: project.description,
+    board: project.items.map((i) => ({
+      kind: i.kind,
+      title: i.title,
+      content: i.content.slice(0, 2000),
+    })),
+    blueprint: bp
+      ? {
+          summary: bp.summary,
+          techStack: bp.techStack,
+          nodes: bp.nodes.map((n) => ({
+            id: n.id,
+            label: n.label,
+            type: n.type,
+            status: n.status,
+          })),
+          gaps: bp.gaps,
+        }
+      : null,
+    generated: (project.generated ?? []).map((g) => g.title),
+  };
+
+  return client.messages.stream({
+    model: MODEL,
+    max_tokens: 8000,
+    thinking: { type: "adaptive" },
+    system: `${CHAT_SYSTEM}\n\n# Project context\n${JSON.stringify(context, null, 1)}`,
+    messages,
+  });
+}

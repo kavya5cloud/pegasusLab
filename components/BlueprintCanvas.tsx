@@ -170,13 +170,13 @@ export default function BlueprintCanvas({
       nodesConnectable={false}
       style={{ background: "transparent" }}
     >
-      <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#d8d4c8" />
+      <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#e3e3e3" />
       <Controls showInteractive={false} />
       <MiniMap
         pannable
         zoomable
         nodeColor={(n) => STATUS_COLOR[(n.data as PegasusNodeData).bp.status]}
-        maskColor="rgba(250, 249, 246, 0.75)"
+        maskColor="rgba(255, 255, 255, 0.75)"
       />
     </ReactFlow>
   );
