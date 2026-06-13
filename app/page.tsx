@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
+import BlueprintPreview from "@/components/BlueprintPreview";
 import { getUser } from "@/lib/auth";
 
 const STACK = ["GitHub", "Figma", "Next.js", "React", "PostgreSQL", "Stripe"];
@@ -130,6 +131,53 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Product preview — show the magic */}
+      <section className="max-w-4xl mx-auto w-full px-6 -mt-14 md:-mt-20 relative z-20">
+        <BlueprintPreview />
+        <p className="text-center text-[12px] mt-4" style={{ color: "var(--ink-muted)" }}>
+          A real Pegasus blueprint — every page, API, table and the gaps between them, mapped in seconds.
+        </p>
+      </section>
+
+      {/* Credibility band — honest, verifiable signals */}
+      <section className="max-w-4xl mx-auto w-full px-6 pt-14">
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border"
+          style={{ borderColor: "var(--hairline)", background: "var(--hairline)" }}
+        >
+          {[
+            ["8", "component types mapped"],
+            ["4", "gap severity levels"],
+            ["3", "AI backends, bring your own"],
+            ["1-click", "ship to GitHub"],
+          ].map(([stat, label]) => (
+            <div key={label} className="bg-white px-5 py-6 text-center">
+              <div className="serif text-3xl md:text-4xl">{stat}</div>
+              <div className="text-[11px] mt-1 leading-snug" style={{ color: "var(--ink-muted)" }}>
+                {label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust / privacy callout — a real differentiator for developers */}
+        <div
+          className="mt-5 rounded-2xl border px-6 py-5 flex items-center gap-4"
+          style={{ borderColor: "var(--hairline)", background: "white" }}
+        >
+          <span className="shrink-0" style={{ color: "var(--ink)" }}>
+            <Icon name="service" size={20} strokeWidth={1.6} />
+          </span>
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-muted)" }}>
+            <span className="font-semibold" style={{ color: "var(--ink)" }}>
+              Bring your own model.
+            </span>{" "}
+            Run Pegasus on Anthropic, Groq, or a fully-local Ollama install. Your code and
+            designs are never used to train anyone&apos;s model.
+          </p>
+        </div>
+      </section>
+
       {/* How it works */}
       <section id="how" className="max-w-4xl mx-auto w-full px-6 py-16 md:py-20">
         <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-10">
@@ -234,6 +282,26 @@ export default function Landing() {
           <Link href="/pricing" className="hover:text-black">Pricing</Link>
           <Link href="/auth" className="hover:text-black">Sign in</Link>
           <Link href="/auth?mode=signup" className="hover:text-black">Get started</Link>
+        </div>
+        <div className="flex items-center gap-4">
+          <a
+            href="https://github.com/pegasuslab"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="GitHub"
+            className="hover:text-black"
+          >
+            <Icon name="github" size={15} strokeWidth={1.8} />
+          </a>
+          <a
+            href="https://x.com/pegasuslab"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="X"
+            className="text-[13px] font-semibold hover:text-black"
+          >
+            𝕏
+          </a>
         </div>
         <span>the intelligence layer between ideas and software</span>
       </footer>

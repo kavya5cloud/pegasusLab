@@ -33,6 +33,17 @@ export default function AuthPage() {
     router.push(next);
   }
 
+  // Styled placeholder for real GitHub OAuth — signs in with the existing
+  // client session so the dev-tool sign-in feels native. Swap for a real
+  // OAuth handshake before launch.
+  function githubSignIn() {
+    signIn({
+      name: name.trim() || "GitHub developer",
+      email: email.trim() || "dev@users.noreply.github.com",
+    });
+    router.push(next);
+  }
+
   return (
     <main className="flex-1 min-h-screen flex flex-col" style={{ background: "var(--paper)" }}>
       <section className="sky-hero relative mx-3 my-3 rounded-3xl overflow-hidden flex-1 flex flex-col">
@@ -78,6 +89,21 @@ export default function AuthPage() {
             onSubmit={submit}
             className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-5 space-y-3"
           >
+            <button
+              type="button"
+              onClick={githubSignIn}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium text-white bg-[#141414] hover:bg-[#262626] transition-colors"
+            >
+              <Icon name="github" size={15} strokeWidth={1.9} />
+              Continue with GitHub
+            </button>
+            <div className="flex items-center gap-3 py-1">
+              <span className="h-px flex-1" style={{ background: "var(--hairline)" }} />
+              <span className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
+                or with email
+              </span>
+              <span className="h-px flex-1" style={{ background: "var(--hairline)" }} />
+            </div>
             {mode === "signup" && (
               <input
                 value={name}
