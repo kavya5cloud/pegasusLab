@@ -20,10 +20,28 @@ const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const TITLE = "pegasus lab. — the intelligence layer between ideas and software";
+const DESCRIPTION =
+  "Drop ideas, code, repos and designs on a whiteboard. Pegasus builds the living blueprint and generates the code that closes the gaps.";
+
 export const metadata: Metadata = {
-  title: "pegasus lab. — the intelligence layer between ideas and software",
-  description:
-    "Drop ideas, code, repos and designs on a whiteboard. Pegasus builds the living blueprint and generates the code that closes the gaps.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "pegasus lab.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    creator: "@pegasuslab",
+  },
 };
 
 export default function RootLayout({
