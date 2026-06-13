@@ -7,9 +7,11 @@ import type { Project } from "@/lib/types";
 export default function ShipPanel({
   project,
   onClose,
+  onShipped,
 }: {
   project: Project;
   onClose: () => void;
+  onShipped?: () => void;
 }) {
   const artifacts = project.generated ?? [];
   const [repo, setRepo] = useState(
@@ -32,6 +34,7 @@ export default function ShipPanel({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Ship failed");
       setResult(data);
+      onShipped?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ship failed");
     } finally {

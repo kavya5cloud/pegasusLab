@@ -38,14 +38,20 @@ export default function AuthPage() {
       <section className="sky-hero relative mx-3 my-3 rounded-3xl overflow-hidden flex-1 flex flex-col">
         {/* Nav — same language as the landing */}
         <nav className="relative z-10 flex items-center justify-between px-6 md:px-10 py-5">
-          <Link href="/" className="flex items-center gap-2 text-white">
-            <Icon name="logo" size={20} strokeWidth={2} />
-            <span className="text-sm font-semibold tracking-tight">pegasus lab.</span>
+          <Link href="/" className="flex items-center text-white">
+            <Image
+              src="/pegasuslogo.png"
+              alt="pegasus lab."
+              width={110}
+              height={92}
+              priority
+              className="brightness-0 invert h-20 w-auto -my-6"
+            />
           </Link>
           <div className="hidden md:flex items-center gap-7 text-[13px] text-white/80">
             <Link href="/" className="hover:text-white">Platform</Link>
-            <Link href="/" className="hover:text-white">Blueprint</Link>
-            <Link href="/" className="hover:text-white">Docs</Link>
+            <Link href="/pricing" className="hover:text-white">Pricing</Link>
+            <Link href="/#how" className="hover:text-white">Docs</Link>
           </div>
           <button
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}

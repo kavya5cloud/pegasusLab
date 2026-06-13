@@ -43,7 +43,7 @@ export default function Landing() {
           <div className="hidden md:flex items-center gap-7 text-[13px] text-white/80">
             <a href="#how" className="hover:text-white">Platform</a>
             <a href="#how" className="hover:text-white">Blueprint</a>
-            <a href="#how" className="hover:text-white">Pricing</a>
+            <Link href="/pricing" className="hover:text-white">Pricing</Link>
             <a href="#how" className="hover:text-white">Docs</a>
           </div>
           <div className="flex items-center gap-3">
@@ -150,18 +150,92 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Feature deep-dive */}
+      <section className="max-w-4xl mx-auto w-full px-6 pb-20">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: "blueprint",
+              title: "Living blueprint",
+              body: "Pegasus doesn't just read your prompt — it reads your whole stack. Every node in the graph is classified as existing, partial, or missing, so you see exactly where the gaps are.",
+            },
+            {
+              icon: "bolt",
+              title: "Gap intelligence",
+              body: "From security holes to missing APIs to UX dead ends, Pegasus surfaces actionable findings ranked by severity — then generates the exact code to close each one.",
+            },
+            {
+              icon: "github",
+              title: "Ship straight to GitHub",
+              body: "Generated artifacts are bundled into a build manifest and pushed to a new or existing repository in one click. No copy-pasting, no assembly required.",
+            },
+          ].map(({ icon, title, body }) => (
+            <div
+              key={title}
+              className="rounded-2xl border p-6"
+              style={{ borderColor: "var(--hairline)", background: "white" }}
+            >
+              <span className="inline-flex mb-4" style={{ color: "var(--ink-muted)" }}>
+                <Icon name={icon} size={18} strokeWidth={1.6} />
+              </span>
+              <h3 className="serif text-xl mb-2">{title}</h3>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-muted)" }}>
+                {body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA banner */}
+      <section className="max-w-4xl mx-auto w-full px-6 pb-20">
+        <div className="sky-hero relative rounded-3xl overflow-hidden px-8 py-14 text-center">
+          <div className="relative z-10">
+            <h2 className="serif text-white text-4xl md:text-5xl mb-4 leading-[1.06]">
+              The intelligence layer
+              <br />
+              <span className="text-white/65">between ideas and software.</span>
+            </h2>
+            <p className="text-white/75 text-[14px] mb-8">
+              Join developers building faster with Pegasus AI — free to start.
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <button
+                onClick={() => go()}
+                className="inline-flex items-center gap-2 bg-white text-black text-[14px] font-semibold rounded-full px-7 py-3 hover:bg-neutral-100"
+              >
+                Start building free
+                <Icon name="arrow-right" size={13} strokeWidth={2.2} />
+              </button>
+              <Link
+                href="/pricing"
+                className="text-[14px] font-medium rounded-full px-7 py-3 hover:bg-white/10 transition-colors"
+                style={{ color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.3)" }}
+              >
+                See pricing
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer
-        className="border-t py-8 flex flex-col items-center gap-1 text-[11px]"
+        className="border-t py-8 flex flex-col items-center gap-4 text-[11px]"
         style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)" }}
       >
         <Image
           src="/pegasuslogo.png"
           alt="pegasus lab."
-          width={130}
-          height={109}
-          className="-my-4"
+          width={100}
+          height={84}
+          className="-my-3"
         />
-        the intelligence layer between ideas and software
+        <div className="flex items-center gap-6">
+          <Link href="/pricing" className="hover:text-black">Pricing</Link>
+          <Link href="/auth" className="hover:text-black">Sign in</Link>
+          <Link href="/auth?mode=signup" className="hover:text-black">Get started</Link>
+        </div>
+        <span>the intelligence layer between ideas and software</span>
       </footer>
     </main>
   );

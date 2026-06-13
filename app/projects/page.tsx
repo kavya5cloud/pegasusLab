@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { getUser, signOut, type SessionUser } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 import type { GapSeverity, Project } from "@/lib/types";
 
 function greeting(): string {
@@ -60,7 +61,10 @@ export default function Dashboard() {
   const [prompt, setPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameVal, setRenameVal] = useState("");
   const promptRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const load = useCallback(() => {
     fetch("/api/projects")
@@ -133,6 +137,20 @@ export default function Dashboard() {
     e.preventDefault();
     e.stopPropagation();
     await fetch(`/api/projects/${id}`, { method: "DELETE" }).catch(() => {});
+    toast("Build deleted");
+    load();
+  }
+
+  async function renameProject(id: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await fetch(`/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    }).catch(() => {});
+    setRenamingId(null);
+    toast("Build renamed");
     load();
   }
 
@@ -182,7 +200,7 @@ export default function Dashboard() {
             />
           </Link>
           <div className="hidden sm:flex items-center gap-5 text-[12px]" style={{ color: "var(--ink-muted)" }}>
-            <Link href="/" className="hover:text-black">Platform</Link>
+            <Link href="/pricing" className="hover:text-black">Pricing</Link>
             <button
               onClick={loadSample}
               disabled={seeding}
@@ -191,6 +209,7 @@ export default function Dashboard() {
             >
               {seeding ? "Seeding…" : "Sample build"}
             </button>
+            <Link href="/settings" className="hover:text-black">Settings</Link>
             <button
               onClick={() => {
                 signOut();
@@ -349,7 +368,34 @@ export default function Dashboard() {
                   style={{ borderColor: "var(--hairline)" }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold truncate">{p.name}</h3>
+                    {renamingId === p.id ? (
+                      <input
+                        autoFocus
+                        value={renameVal}
+                        onChange={(e) => setRenameVal(e.target.value)}
+                        onBlur={() => renameProject(p.id, renameVal)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") renameProject(p.id, renameVal);
+                          if (e.key === "Escape") setRenamingId(null);
+                          e.stopPropagation();
+                        }}
+                        onClick={(e) => e.preventDefault()}
+                        className="flex-1 text-sm font-semibold outline-none border-b bg-transparent min-w-0"
+                        style={{ borderColor: "var(--hairline)" }}
+                      />
+                    ) : (
+                      <h3
+                        className="text-sm font-semibold truncate cursor-text"
+                        title="Double-click to rename"
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          setRenamingId(p.id);
+                          setRenameVal(p.name);
+                        }}
+                      >
+                        {p.name}
+                      </h3>
+                    )}
                     <div className="flex items-center gap-2 shrink-0">
                       <span
                         className="text-[10px] font-mono uppercase tracking-wide rounded-full px-2 py-0.5"
@@ -360,6 +406,19 @@ export default function Dashboard() {
                       >
                         {p.blueprint ? "Blueprint ready" : "On the board"}
                       </span>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setRenamingId(p.id);
+                          setRenameVal(p.name);
+                        }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                        title="Rename build"
+                        style={{ color: "var(--ink-muted)" }}
+                      >
+                        <Icon name="design" size={11} strokeWidth={2} />
+                      </button>
                       <button
                         onClick={(e) => remove(e, p.id)}
                         className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"

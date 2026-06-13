@@ -9,6 +9,8 @@ import CodePanel from "./CodePanel";
 import ShipPanel from "./ShipPanel";
 import BuildModal from "./BuildModal";
 import ChatPanel from "./ChatPanel";
+import ArtifactsPanel from "./ArtifactsPanel";
+import { useToast } from "./Toast";
 import Image from "next/image";
 import { Icon } from "./icons";
 import type { BoardItem, Gap, Project } from "@/lib/types";
@@ -25,11 +27,14 @@ export default function Workspace({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<Tab>("gaps");
   const [selectedGap, setSelectedGap] = useState<Gap | null>(null);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "idle">("idle");
+  const [backend, setBackend] = useState<string | null>(null);
 
   const [codeOpen, setCodeOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
   const [buildModalOpen, setBuildModalOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [artifactsOpen, setArtifactsOpen] = useState(false);
+  const { toast } = useToast();
   const [codeTitle, setCodeTitle] = useState("");
   const [codeContent, setCodeContent] = useState("");
   const [generatingGapId, setGeneratingGapId] = useState<string | null>(null);
@@ -39,6 +44,10 @@ export default function Workspace({ projectId }: { projectId: string }) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    fetch("/api/status").then(r => r.json()).then(d => setBackend(d.backend)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     fetch(`/api/projects/${projectId}`)
       .then(async (res) => {
         if (res.ok) {
@@ -46,10 +55,31 @@ export default function Workspace({ projectId }: { projectId: string }) {
           setProject(p);
           itemsRef.current = p.items;
           if (p.blueprint) setView("blueprint");
+          document.title = `${p.name} — pegasus lab.`;
         }
       })
       .finally(() => setLoading(false));
+    return () => { document.title = "pegasus lab. — the intelligence layer between ideas and software"; };
   }, [projectId]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (codeOpen) { abortRef.current?.abort(); setCodeOpen(false); return; }
+        if (chatOpen) { setChatOpen(false); return; }
+        if (shipOpen) { setShipOpen(false); return; }
+        if (buildModalOpen) { setBuildModalOpen(false); return; }
+        if (artifactsOpen) { setArtifactsOpen(false); return; }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault();
+        if (!analyzing) setBuildModalOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [codeOpen, chatOpen, shipOpen, buildModalOpen, artifactsOpen, analyzing]);
 
   const persistItems = useCallback(
     (items: BoardItem[]) => {
@@ -90,8 +120,10 @@ export default function Workspace({ projectId }: { projectId: string }) {
       setProject(data);
       itemsRef.current = data.items;
       setSelectedGap(null);
+      toast(`Blueprint ready — ${data.blueprint?.gaps?.length ?? 0} gaps found`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Blueprint generation failed");
+      toast(e instanceof Error ? e.message : "Blueprint generation failed", "error");
       setView("board");
     } finally {
       setAnalyzing(false);
@@ -146,6 +178,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ generated }),
         }).catch(() => {});
+        toast(`Code generated for "${gap.title}"`);
       }
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) {
@@ -198,14 +231,17 @@ export default function Workspace({ projectId }: { projectId: string }) {
             />
           </Link>
           <span style={{ color: "var(--line)" }}>/</span>
-          <h1 className="text-sm font-medium truncate">{project.name}</h1>
-          {project.demo && (
+          <h1 className="text-sm font-medium truncate" title={project.name}>{project.name}</h1>
+          {backend && (
             <span
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded uppercase shrink-0"
-              style={{ color: "var(--warn)", background: "rgba(180,83,9,0.1)" }}
-              title="Set ANTHROPIC_API_KEY in .env.local for real analysis"
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0"
+              style={{
+                color: backend === "demo" ? "var(--warn)" : "var(--ok)",
+                background: backend === "demo" ? "rgba(180,83,9,0.1)" : "rgba(21,128,61,0.08)",
+              }}
+              title={backend === "demo" ? "Set an API key in .env.local for real AI analysis" : `AI powered by ${backend}`}
             >
-              demo mode
+              {backend === "demo" ? "demo mode" : backend}
             </span>
           )}
           <span className="text-[10px] font-mono shrink-0" style={{ color: "var(--muted)" }}>
@@ -240,21 +276,42 @@ export default function Workspace({ projectId }: { projectId: string }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setChatOpen(true)}
+            className="text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5"
+            style={{ border: "1px solid var(--line)", color: "var(--muted)" }}
+            title="Chat with Pegasus about this build"
+          >
+            <Icon name="idea" size={11} strokeWidth={1.8} />
+            Chat
+          </button>
           {(project.generated?.length ?? 0) > 0 && (
-            <button
-              onClick={() => setShipOpen(true)}
-              className="text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5"
-              style={{ background: "#2563eb", color: "#ffffff" }}
-            >
-              <Icon name="github" size={11} strokeWidth={2} />
-              Ship
-            </button>
+            <>
+              <button
+                onClick={() => setArtifactsOpen(true)}
+                className="text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5"
+                style={{ border: "1px solid var(--line)", color: "var(--muted)" }}
+                title="View all generated artifacts"
+              >
+                <Icon name="code" size={11} strokeWidth={2} />
+                {project.generated!.length} artifact{project.generated!.length !== 1 ? "s" : ""}
+              </button>
+              <button
+                onClick={() => setShipOpen(true)}
+                className="text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5"
+                style={{ background: "#2563eb", color: "#ffffff" }}
+              >
+                <Icon name="github" size={11} strokeWidth={2} />
+                Ship
+              </button>
+            </>
           )}
           <button
             onClick={() => setBuildModalOpen(true)}
             disabled={analyzing}
             className="text-xs font-semibold px-4 py-1.5 rounded-full disabled:opacity-50"
             style={{ background: "var(--accent)", color: "#ffffff" }}
+            title="Build app (⌘B)"
           >
             {analyzing ? "Building…" : bp ? "Rebuild app" : "Build app"}
           </button>
@@ -332,6 +389,23 @@ export default function Workspace({ projectId }: { projectId: string }) {
               {tab === "summary" && (
                 <div className="space-y-4">
                   <p className="text-sm leading-relaxed">{bp.summary}</p>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(bp, null, 2)], { type: "application/json" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${project.name.toLowerCase().replace(/\s+/g, "-")}-blueprint.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast("Blueprint exported");
+                    }}
+                    className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 w-full justify-center"
+                    style={{ border: "1px solid var(--line)", color: "var(--muted)" }}
+                  >
+                    <Icon name="doc" size={11} strokeWidth={1.8} />
+                    Export blueprint JSON
+                  </button>
                   <div>
                     <h4
                       className="text-[10px] font-mono uppercase tracking-wider mb-2"
@@ -406,7 +480,10 @@ export default function Workspace({ projectId }: { projectId: string }) {
         />
       )}
 
-      {shipOpen && <ShipPanel project={project} onClose={() => setShipOpen(false)} />}
+      {shipOpen && <ShipPanel project={project} onClose={() => setShipOpen(false)} onShipped={() => toast("Build shipped to GitHub!")} />}
+      {artifactsOpen && (project.generated?.length ?? 0) > 0 && (
+        <ArtifactsPanel artifacts={project.generated!} onClose={() => setArtifactsOpen(false)} />
+      )}
 
       {codeOpen && (
         <CodePanel

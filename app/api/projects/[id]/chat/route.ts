@@ -53,13 +53,8 @@ export async function POST(
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const event of messageStream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+        for await (const text of messageStream) {
+          controller.enqueue(encoder.encode(text));
         }
         controller.close();
       } catch (err) {
@@ -70,9 +65,6 @@ export async function POST(
         );
         controller.close();
       }
-    },
-    cancel() {
-      messageStream.abort();
     },
   });
 
