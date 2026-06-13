@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { artifactsToFiles } from "@/lib/ship";
 import { getProject } from "@/lib/store";
+import { getOwner } from "@/lib/session";
 
 export const maxDuration = 300;
 
@@ -20,7 +21,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const project = await getProject(id);
+  const owner = await getOwner();
+  const project = await getProject(id, owner);
   if (!project) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }

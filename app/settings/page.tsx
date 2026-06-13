@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { signOut as oauthSignOut } from "next-auth/react";
 import { getUser, signIn, signOut, type SessionUser } from "@/lib/auth";
 
 export default function SettingsPage() {
@@ -74,7 +75,7 @@ export default function SettingsPage() {
             <Link href="/projects" className="hover:text-black">Dashboard</Link>
             <Link href="/pricing" className="hover:text-black">Pricing</Link>
             <button
-              onClick={() => { signOut(); router.push("/"); }}
+              onClick={() => { signOut(); oauthSignOut({ callbackUrl: "/" }); }}
               className="hover:text-black"
             >
               Sign out
@@ -213,7 +214,7 @@ export default function SettingsPage() {
             <h2 className="text-[13px] font-semibold mb-3">Account</h2>
             <button
               type="button"
-              onClick={() => { signOut(); router.push("/"); }}
+              onClick={() => { signOut(); oauthSignOut({ callbackUrl: "/" }); }}
               className="text-[13px] rounded-xl border px-4 py-2 hover:border-red-400 hover:text-red-600 transition-colors"
               style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)" }}
             >

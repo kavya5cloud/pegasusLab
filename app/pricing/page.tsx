@@ -221,6 +221,25 @@ export default function PricingPage() {
         <div className="mt-20">
           <h2 className="serif text-3xl text-center mb-10">What's included</h2>
           <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--hairline)" }}>
+            {/* Column headers */}
+            <div
+              className="grid grid-cols-4 items-center"
+              style={{ borderBottom: "1px solid var(--hairline)", background: "white" }}
+            >
+              <div className="px-5 py-3.5" />
+              {["Hobby", "Pro", "Team"].map((plan) => (
+                <div
+                  key={plan}
+                  className="px-5 py-3.5 text-center text-[11px] font-mono uppercase tracking-widest"
+                  style={{
+                    color: plan === "Pro" ? "#2563eb" : "var(--ink-muted)",
+                    fontWeight: plan === "Pro" ? 600 : 400,
+                  }}
+                >
+                  {plan}
+                </div>
+              ))}
+            </div>
             {[
               ["Board — whiteboard with all card types", true, true, true],
               ["Blueprint generation (AI)", true, true, true],
@@ -247,7 +266,7 @@ export default function PricingPage() {
                 {[hobby, pro, team].map((val, j) => (
                   <div key={j} className="px-5 py-3.5 text-center text-[13px]" style={{ color: "var(--ink-muted)" }}>
                     {val === true ? (
-                      <span className="text-green-700">
+                      <span style={{ color: "#2563eb" }}>
                         <Icon name="check" size={14} strokeWidth={2.2} />
                       </span>
                     ) : val === false ? (

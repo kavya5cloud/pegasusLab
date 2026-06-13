@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { signIn as oauthSignIn } from "next-auth/react";
 import { Icon } from "@/components/icons";
+import { GoogleMark } from "@/components/icons";
 import { getUser, signIn } from "@/lib/auth";
 
 export default function AuthPage() {
@@ -14,6 +16,10 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [next, setNext] = useState("/projects");
+  const [providers, setProviders] = useState<{ google: boolean; github: boolean }>({
+    google: false,
+    github: false,
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -21,6 +27,10 @@ export default function AuthPage() {
     const n = params.get("next");
     if (n) setNext(n);
     if (getUser()) router.replace(n || "/projects");
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((d) => d.auth && setProviders(d.auth))
+      .catch(() => {});
   }, [router]);
 
   function submit(e: React.FormEvent) {
@@ -33,13 +43,16 @@ export default function AuthPage() {
     router.push(next);
   }
 
-  // Styled placeholder for real GitHub OAuth — signs in with the existing
-  // client session so the dev-tool sign-in feels native. Swap for a real
-  // OAuth handshake before launch.
-  function githubSignIn() {
+  // Real OAuth when the provider is configured; otherwise a graceful demo
+  // sign-in so the product stays usable before credentials are added.
+  function oauth(provider: "google" | "github") {
+    if (providers[provider]) {
+      oauthSignIn(provider, { callbackUrl: next });
+      return;
+    }
     signIn({
-      name: name.trim() || "GitHub developer",
-      email: email.trim() || "dev@users.noreply.github.com",
+      name: name.trim() || (provider === "google" ? "Google developer" : "GitHub developer"),
+      email: email.trim() || `dev@${provider}.demo`,
     });
     router.push(next);
   }
@@ -91,7 +104,16 @@ export default function AuthPage() {
           >
             <button
               type="button"
-              onClick={githubSignIn}
+              onClick={() => oauth("google")}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium border hover:bg-neutral-50 transition-colors"
+              style={{ borderColor: "var(--hairline)", color: "var(--ink)" }}
+            >
+              <GoogleMark size={16} />
+              Continue with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => oauth("github")}
               className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium text-white bg-[#141414] hover:bg-[#262626] transition-colors"
             >
               <Icon name="github" size={15} strokeWidth={1.9} />

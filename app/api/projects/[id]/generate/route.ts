@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDemoMode, streamGapCode } from "@/lib/claude";
 import { DEMO_CODE } from "@/lib/demo";
 import { getProject } from "@/lib/store";
+import { getOwner } from "@/lib/session";
 
 export const maxDuration = 300;
 
@@ -10,7 +11,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const project = await getProject(id);
+  const owner = await getOwner();
+  const project = await getProject(id, owner);
   if (!project || !project.blueprint) {
     return NextResponse.json(
       { error: "project or blueprint not found" },

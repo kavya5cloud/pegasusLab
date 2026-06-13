@@ -3,6 +3,7 @@ import { generateBlueprint, isDemoMode } from "@/lib/claude";
 import { demoBlueprint } from "@/lib/demo";
 import { fetchRepoContext } from "@/lib/github";
 import { getProject, updateProject } from "@/lib/store";
+import { getOwner } from "@/lib/session";
 
 export const maxDuration = 300;
 
@@ -11,7 +12,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const project = await getProject(id);
+  const owner = await getOwner();
+  const project = await getProject(id, owner);
   if (!project) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
@@ -33,7 +35,7 @@ export async function POST(
       );
       blueprint = await generateBlueprint(project, githubContext);
     }
-    const updated = await updateProject(id, { blueprint, demo });
+    const updated = await updateProject(id, { blueprint, demo }, owner);
     return NextResponse.json(updated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "blueprint failed";

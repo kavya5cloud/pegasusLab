@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { demoBlueprint, DEMO_CODE } from "@/lib/demo";
 import { createProject, updateProject } from "@/lib/store";
+import { getOwner } from "@/lib/session";
 import type { BoardItem } from "@/lib/types";
 
 // Seeds a complete showcase build — board, blueprint, and one generated
@@ -52,12 +53,13 @@ export async function POST() {
     },
   ];
 
+  const owner = await getOwner();
   const project = await createProject({
     name: "Lumen — sample build",
     description:
       "A customer feedback hub: collect feedback, cluster it into themes, ship the roadmap. Seeded showcase project.",
     items,
-  });
+  }, owner);
 
   const blueprint = demoBlueprint(project);
   const updated = await updateProject(project.id, {
@@ -72,7 +74,7 @@ export async function POST() {
         createdAt: new Date().toISOString(),
       },
     ],
-  });
+  }, owner);
 
   return NextResponse.json(updated, { status: 201 });
 }

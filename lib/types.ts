@@ -87,6 +87,8 @@ export interface Project {
   blueprint: Blueprint | null;
   generated?: GeneratedArtifact[];
   demo?: boolean;
+  /** Session identifier (email) of the owner; "demo" for unauthenticated use. */
+  owner?: string;
   createdAt: string;
   updatedAt: string;
 }

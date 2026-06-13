@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { signOut as oauthSignOut } from "next-auth/react";
 import { getUser, signOut, type SessionUser } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import type { GapSeverity, Project } from "@/lib/types";
@@ -213,7 +214,7 @@ export default function Dashboard() {
             <button
               onClick={() => {
                 signOut();
-                router.push("/");
+                oauthSignOut({ callbackUrl: "/" });
               }}
               className="hover:text-black"
             >
