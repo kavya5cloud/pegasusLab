@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: pegasusai-api
+    runtime: node
+    region: singapore
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://pegasuslab.in
+
+      # AI backends — set at least one
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+
+      # Database
+      - key: DATABASE_URL
+        sync: false
+
+      # Auth
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_GOOGLE_ID
+        sync: false
+      - key: AUTH_GOOGLE_SECRET
+        sync: false
+      - key: AUTH_GITHUB_ID
+        sync: false
+      - key: AUTH_GITHUB_SECRET
+        sync: false
+
+      # Email
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: Pegasus Lab <hello@pegasuslab.in>
+      - key: RESEND_INBOX
+        value: kavyax888@gmail.com
+
+      # Firebase (public vars)
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        value: AIzaSyBhnTEYQE88D3piajPBp1V2b7jqvY4rqAg
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        value: pegasuslab-f7d95.firebaseapp.com
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        value: pegasuslab-f7d95
+      - key: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+        value: G-VGETVTE0N8
