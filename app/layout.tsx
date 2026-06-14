@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Suspense } from "react";
 import Providers from "@/components/Providers";
+import FirebaseAnalytics from "@/components/FirebaseAnalytics";
 import { isAuthConfigured } from "@/auth";
 import "./globals.css";
 
@@ -55,7 +57,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Providers authEnabled={isAuthConfigured()}>{children}</Providers>
+        <Providers authEnabled={isAuthConfigured()}>
+          {children}
+          <Suspense fallback={null}>
+            <FirebaseAnalytics />
+          </Suspense>
+        </Providers>
       </body>
     </html>
   );
