@@ -1,5 +1,8 @@
 "use client";
 
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,7 +23,7 @@ const PLANS = [
       "Download artifacts",
       "Community support",
     ],
-    cta: "Start for free",
+    cta: "Start building free",
     href: "/auth?mode=signup",
     highlight: false,
   },
@@ -87,13 +90,15 @@ const FAQS = [
 
 export default function PricingPage() {
   const router = useRouter();
+  const [welcome, setWelcome] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("welcome") === "1") setWelcome(true);
+  }, []);
 
   function handleCta(href: string) {
-    // Contact sales always goes to the form, regardless of session.
-    if (href === "/contact") {
-      router.push(href);
-      return;
-    }
+    if (href === "/contact") { router.push(href); return; }
     if (getUser()) {
       router.push("/projects");
     } else {
@@ -131,16 +136,26 @@ export default function PricingPage() {
 
         {/* Hero content */}
         <div className="relative z-10 text-center px-6 pt-10 pb-20 md:pt-14 md:pb-24 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur text-white/90 text-[11px] font-mono uppercase tracking-widest rounded-full px-3 py-1 mb-7">
-            <Icon name="bolt" size={10} strokeWidth={2} /> Transparent pricing
-          </div>
+          {welcome ? (
+            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-white text-[13px] font-medium rounded-full px-4 py-1.5 mb-7">
+              🎉 Account created — pick your plan to get started
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur text-white/90 text-[11px] font-mono uppercase tracking-widest rounded-full px-3 py-1 mb-7">
+              <Icon name="bolt" size={10} strokeWidth={2} /> Transparent pricing
+            </div>
+          )}
           <h1 className="serif text-white text-5xl md:text-6xl leading-[1.05] mb-5">
-            Start free.
-            <br />
-            <span className="text-white/65">Scale when you ship.</span>
+            {welcome ? (
+              <>Welcome to<br /><span className="text-white/65">pegasus lab.</span></>
+            ) : (
+              <>Start free.<br /><span className="text-white/65">Scale when you ship.</span></>
+            )}
           </h1>
           <p className="text-white/85 text-[15px] leading-relaxed max-w-md mx-auto">
-            Every plan includes the full board-to-blueprint-to-code loop. No feature gating on the core workflow.
+            {welcome
+              ? "You're on the free plan. 2 new projects per week, full AI loop included. Upgrade anytime."
+              : "Every plan includes the full board-to-blueprint-to-code loop. No feature gating on the core workflow."}
           </p>
         </div>
       </section>

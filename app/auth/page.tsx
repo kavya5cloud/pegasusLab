@@ -45,7 +45,7 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: resolvedName, email: email.trim() }),
       }).catch(() => {});
-      router.push("/settings?setup=1");
+      router.push("/pricing?welcome=1");
     } else {
       router.push(next);
     }

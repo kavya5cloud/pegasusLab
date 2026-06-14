@@ -120,7 +120,10 @@ export default function Dashboard() {
     const u = getUser();
     if (!u) { router.replace("/auth?next=%2Fprojects"); return; }
     setUser(u);
-    setShowKeyBanner(!hasAnyApiKey());
+    // Only show the key banner if the server has no AI key configured either
+    fetch("/api/status").then(r => r.json()).then(d => {
+      if (d.demo && !hasAnyApiKey()) setShowKeyBanner(true);
+    }).catch(() => {});
     load();
     const carried = new URLSearchParams(window.location.search).get("prompt");
     if (carried) { setPrompt(carried); setTimeout(() => promptRef.current?.focus(), 100); }
