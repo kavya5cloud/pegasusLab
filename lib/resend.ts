@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? "missing");
+}
 
 const FROM = process.env.RESEND_FROM ?? "Pegasus Lab <onboarding@resend.dev>";
 const INBOX = process.env.RESEND_INBOX ?? "kavyax888@gmail.com";
@@ -9,7 +11,7 @@ const INBOX = process.env.RESEND_INBOX ?? "kavyax888@gmail.com";
 
 export async function sendWelcomeEmail(to: string, name: string) {
   const first = name.split(" ")[0];
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: "Welcome to Pegasus Lab ✦",
@@ -68,7 +70,7 @@ export async function sendContactEmail(opts: {
   message?: string;
 }) {
   // Notify the inbox
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: INBOX,
     replyTo: opts.email,
@@ -86,7 +88,7 @@ ${opts.message || "(no message)"}
   });
 
   // Auto-reply to the sender
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: opts.email,
     subject: "We got your message — Pegasus Lab",
