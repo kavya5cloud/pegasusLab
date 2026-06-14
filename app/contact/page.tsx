@@ -16,6 +16,8 @@ export default function ContactSalesPage() {
   const [teamSize, setTeamSize] = useState("2–10");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const u = getUser();
@@ -25,11 +27,24 @@ export default function ContactSalesPage() {
     }
   }, []);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
-    // No backend yet — acknowledge locally. Wire to a CRM/email endpoint later.
-    setSubmitted(true);
+    if (!name.trim() || !email.trim() || sending) return;
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, company, teamSize, message }),
+      });
+      if (!res.ok) throw new Error("send failed");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong — please email us directly at hello@pegasuslab.ai");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -176,12 +191,16 @@ export default function ContactSalesPage() {
                 />
               </div>
 
+              {error && (
+                <p className="text-[12px] text-red-600 text-center">{error}</p>
+              )}
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white text-[14px] font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors"
+                disabled={sending}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white text-[14px] font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
               >
-                Send message
-                <Icon name="arrow-right" size={13} strokeWidth={2.2} />
+                {sending ? "Sending…" : "Send message"}
+                {!sending && <Icon name="arrow-right" size={13} strokeWidth={2.2} />}
               </button>
               <p className="text-[11px] text-center" style={{ color: "var(--ink-muted)" }}>
                 Prefer email? Reach us at{" "}

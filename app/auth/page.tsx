@@ -36,12 +36,15 @@ export default function AuthPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
-    signIn({
-      name: name.trim() || email.split("@")[0],
-      email: email.trim(),
-    });
-    // New signups → settings to add their AI key; returning users → intended dest
+    const resolvedName = name.trim() || email.split("@")[0];
+    signIn({ name: resolvedName, email: email.trim() });
     if (mode === "signup") {
+      // Fire-and-forget welcome email — don't block navigation on it.
+      fetch("/api/welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: resolvedName, email: email.trim() }),
+      }).catch(() => {});
       router.push("/settings?setup=1");
     } else {
       router.push(next);
