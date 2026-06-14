@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Icon } from "@/components/icons";
 import { getUser } from "@/lib/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const TEAM_SIZES = ["Just me", "2–10", "11–50", "51–200", "200+"];
 
@@ -49,6 +50,7 @@ export default function ContactSalesPage() {
           <div className="flex items-center gap-4 md:gap-7 text-[13px] text-white/80">
             <Link href="/pricing" className="hover:text-white">Pricing</Link>
             <Link href="/auth" className="hover:text-white">Sign in</Link>
+            <ThemeToggle color="rgba(255,255,255,0.85)" />
             <Link
               href="/auth?mode=signup"
               className="text-[13px] font-medium bg-white text-black rounded-full px-4 py-1.5 hover:bg-white/90"

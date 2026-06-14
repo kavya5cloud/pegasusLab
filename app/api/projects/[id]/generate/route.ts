@@ -20,15 +20,21 @@ export async function POST(
     );
   }
 
-  const { gapId } = await req.json();
+  const body = await req.json();
+  const { gapId } = body;
   const gap = project.blueprint.gaps.find((g) => g.id === gapId);
   if (!gap) {
     return NextResponse.json({ error: "gap not found" }, { status: 404 });
   }
 
+  const overrideKeys = {
+    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
+    google:    req.headers.get("x-google-key") ?? undefined,
+  };
+
   const encoder = new TextEncoder();
 
-  if (isDemoMode()) {
+  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google) {
     // Simulate streaming so the UI behaves identically without a key.
     const chunks = DEMO_CODE.match(/[\s\S]{1,80}/g) ?? [];
     const stream = new ReadableStream<Uint8Array>({
@@ -45,7 +51,7 @@ export async function POST(
     });
   }
 
-  const messageStream = streamGapCode(project, gap);
+  const messageStream = streamGapCode(project, gap, overrideKeys);
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {

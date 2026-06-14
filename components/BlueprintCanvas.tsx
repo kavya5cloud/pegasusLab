@@ -68,7 +68,7 @@ function PegasusNode({ data }: NodeProps<Node<PegasusNodeData>>) {
   return (
     <div
       title={bp.description}
-      className="rounded-lg px-3 py-2 w-[200px] transition-opacity"
+      className="rounded-lg px-3 py-2 w-[200px] transition-all duration-500"
       style={{
         background: "var(--panel-2)",
         border: `1px solid ${bp.status === "missing" ? color : "var(--line)"}`,

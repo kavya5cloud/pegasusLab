@@ -5,7 +5,7 @@ import { isAuthConfigured } from "@/auth";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -16,9 +16,8 @@ const geistMono = Geist_Mono({
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-serif",
-  weight: "400",
-  style: ["normal", "italic"],
   subsets: ["latin"],
+  weight: "400",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

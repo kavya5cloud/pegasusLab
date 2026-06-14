@@ -21,21 +21,24 @@ export default function GapPanel({
   selectedGapId,
   onSelect,
   onGenerate,
+  onPreview,
   generatingGapId,
 }: {
   gaps: Gap[];
   selectedGapId: string | null;
   onSelect: (gap: Gap | null) => void;
   onGenerate: (gap: Gap) => void;
+  onPreview: (gap: Gap) => void;
   generatingGapId: string | null;
 }) {
-  const sorted = [...gaps].sort(
-    (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]
-  );
+  const open = [...gaps]
+    .filter((g) => !g.resolved)
+    .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
+  const resolved = gaps.filter((g) => g.resolved);
 
   return (
     <div className="flex flex-col gap-2">
-      {sorted.map((gap) => {
+      {open.map((gap) => {
         const sev = SEVERITY_STYLE[gap.severity];
         const selected = gap.id === selectedGapId;
         return (
@@ -72,26 +75,78 @@ export default function GapPanel({
                   <span style={{ color: "var(--accent)" }}>Fix: </span>
                   {gap.recommendation}
                 </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGenerate(gap);
-                  }}
-                  disabled={generatingGapId !== null}
-                  className="text-xs font-medium px-3.5 py-1.5 rounded-full transition-opacity disabled:opacity-40"
-                  style={{ background: "var(--accent)", color: "#ffffff" }}
-                >
-                  {generatingGapId === gap.id ? "Generating…" : "Generate code"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGenerate(gap);
+                    }}
+                    disabled={generatingGapId !== null}
+                    className="text-xs font-medium px-3.5 py-1.5 rounded-full transition-opacity disabled:opacity-40"
+                    style={{ background: "var(--accent)", color: "#ffffff" }}
+                  >
+                    {generatingGapId === gap.id ? "Generating…" : "Generate code"}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPreview(gap);
+                    }}
+                    className="text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors"
+                    style={{ border: "1px solid var(--line)", color: "var(--muted)" }}
+                  >
+                    Live preview
+                  </button>
+                </div>
               </div>
             )}
           </div>
         );
       })}
-      {sorted.length === 0 && (
+
+      {open.length === 0 && resolved.length === 0 && (
         <p className="text-sm" style={{ color: "var(--muted)" }}>
           No gaps detected — this blueprint is complete.
         </p>
+      )}
+
+      {open.length === 0 && resolved.length > 0 && (
+        <div
+          className="rounded-lg p-3 text-sm text-center"
+          style={{ background: "rgba(52,211,153,0.08)", border: "1px solid var(--ok)", color: "var(--ok)" }}
+        >
+          ✓ All gaps closed — every node is built.
+        </div>
+      )}
+
+      {resolved.length > 0 && (
+        <>
+          <div
+            className="text-[10px] font-mono uppercase tracking-wider mt-2 pt-2"
+            style={{ color: "var(--muted)", borderTop: "1px solid var(--line)" }}
+          >
+            Resolved ({resolved.length})
+          </div>
+          {resolved.map((gap) => (
+            <div
+              key={gap.id}
+              onClick={() => onGenerate(gap)}
+              className="rounded-lg p-2.5 cursor-pointer transition-colors flex items-center gap-2"
+              style={{ background: "var(--panel)", border: "1px solid var(--line)", opacity: 0.7 }}
+              title="Regenerate code for this gap"
+            >
+              <span
+                className="flex items-center justify-center h-4 w-4 rounded-full shrink-0 text-[10px]"
+                style={{ background: "var(--ok)", color: "#fff" }}
+              >
+                ✓
+              </span>
+              <span className="text-xs line-through" style={{ color: "var(--muted)" }}>
+                {gap.title}
+              </span>
+            </div>
+          ))}
+        </>
       )}
     </div>
   );

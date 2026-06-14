@@ -1,4 +1,4 @@
-import type { Blueprint, Project } from "./types";
+import type { Blueprint, Gap, Project } from "./types";
 
 // Used when no ANTHROPIC_API_KEY is configured, so the product can be
 // demoed end-to-end without credentials.
@@ -119,6 +119,69 @@ export const { GET, POST } = handlers;
 - Add \`AUTH_SECRET\` and \`AUTH_GITHUB_ID\` / \`AUTH_GITHUB_SECRET\` to .env.local
 - Wrap protected routes with the exported \`auth\` middleware.
 `;
+
+/**
+ * A polished, self-contained interactive App.jsx for the live preview when no
+ * API key is set. Demonstrates a working auth flow themed to the gap. Uses no
+ * JS template literals so it embeds safely in this template string; gap text is
+ * injected as JSON-encoded JSX expressions.
+ */
+export function demoPreviewApp(gap: Gap): string {
+  const heading = JSON.stringify(gap.title);
+  const reco = JSON.stringify(gap.recommendation || "Pegasus generates an interactive demo of this fix.");
+  return `import React, { useState } from "react";
+
+export default function App() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState("idle");
+
+  const valid = email.includes("@") && password.length >= 6;
+
+  function submit(e) {
+    e.preventDefault();
+    if (!valid) { setStatus("error"); return; }
+    setStatus("loading");
+    setTimeout(function () { setStatus("success"); }, 900);
+  }
+
+  const label = { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", margin: "14px 0 6px" };
+  const input = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 14, outline: "none" };
+  const primary = { width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#4f46e5", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 14 };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#eef2ff,#faf5ff)", padding: 24 }}>
+      <div style={{ width: 380, background: "#fff", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.12)", padding: 32 }}>
+        <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6366f1", fontWeight: 700, marginBottom: 10 }}>Pegasus Preview</div>
+        <h1 style={{ margin: "0 0 6px", fontSize: 21 }}>{${heading}}</h1>
+        <p style={{ margin: "0 0 18px", color: "#6b7280", fontSize: 13, lineHeight: 1.5 }}>{${reco}}</p>
+        {status === "success" ? (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 12px" }}>✓</div>
+            <div style={{ fontWeight: 600 }}>Signed in as {email}</div>
+            <button onClick={function () { setStatus("idle"); }} style={{ marginTop: 16, padding: "8px 16px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>Sign out</button>
+          </div>
+        ) : (
+          <form onSubmit={submit}>
+            <label style={label}>Email</label>
+            <input value={email} onChange={function (e) { setEmail(e.target.value); }} placeholder="you@company.com" style={input} />
+            <label style={label}>Password</label>
+            <input type="password" value={password} onChange={function (e) { setPassword(e.target.value); }} placeholder="At least 6 characters" style={input} />
+            {status === "error" ? (
+              <div style={{ color: "#dc2626", fontSize: 12, marginTop: 10 }}>Enter a valid email and a 6+ character password.</div>
+            ) : null}
+            <button type="submit" disabled={status === "loading"} style={Object.assign({}, primary, { opacity: status === "loading" ? 0.6 : 1 })}>
+              {status === "loading" ? "Signing in..." : "Sign in"}
+            </button>
+            <div style={{ textAlign: "center", marginTop: 14, fontSize: 12, color: "#9ca3af" }}>Demo preview — set an API key for a gap-specific build.</div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+`;
+}
 
 export function demoChatReply(question: string): string {
   return [

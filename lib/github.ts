@@ -1,21 +1,23 @@
 /**
  * Fetches public-repo context (metadata, file tree, README, package.json)
  * for GitHub cards on the whiteboard. Unauthenticated — fine for public
- * repos; set GITHUB_TOKEN to raise rate limits / access private repos.
+ * repos; set GITHUB_TOKEN (or pass a per-request token) to raise rate limits
+ * and access private repos.
  */
 
-const HEADERS: Record<string, string> = {
-  Accept: "application/vnd.github+json",
-  "User-Agent": "pegasus-ai",
-  ...(process.env.GITHUB_TOKEN
-    ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-    : {}),
-};
+function ghHeaders(tokenOverride?: string): Record<string, string> {
+  const token = tokenOverride ?? process.env.GITHUB_TOKEN;
+  return {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "pegasus-ai",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
-async function gh(url: string): Promise<Response | null> {
+async function gh(url: string, token?: string): Promise<Response | null> {
   try {
     const res = await fetch(url, {
-      headers: HEADERS,
+      headers: ghHeaders(token),
       signal: AbortSignal.timeout(8000),
     });
     return res.ok ? res : null;
@@ -30,12 +32,12 @@ export function parseRepoUrl(url: string): { owner: string; repo: string } | nul
   return { owner: m[1], repo: m[2].replace(/\.git$/, "") };
 }
 
-export async function fetchRepoContext(url: string): Promise<string> {
+export async function fetchRepoContext(url: string, token?: string): Promise<string> {
   const parsed = parseRepoUrl(url);
   if (!parsed) return `Not a recognizable GitHub repo URL: ${url}`;
   const { owner, repo } = parsed;
 
-  const metaRes = await gh(`https://api.github.com/repos/${owner}/${repo}`);
+  const metaRes = await gh(`https://api.github.com/repos/${owner}/${repo}`, token);
   if (!metaRes) {
     return `Repo ${owner}/${repo} could not be fetched (private, missing, or rate-limited). Treat it as an existing codebase whose contents are unknown.`;
   }
@@ -48,7 +50,8 @@ export async function fetchRepoContext(url: string): Promise<string> {
   ];
 
   const treeRes = await gh(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`
+    `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+    token
   );
   if (treeRes) {
     const tree = await treeRes.json();
@@ -60,14 +63,16 @@ export async function fetchRepoContext(url: string): Promise<string> {
   }
 
   const pkgRes = await gh(
-    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/package.json`
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/package.json`,
+    token
   );
   if (pkgRes) {
     parts.push(`package.json:\n${(await pkgRes.text()).slice(0, 4000)}`);
   }
 
   const readmeRes = await gh(
-    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/README.md`
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/README.md`,
+    token
   );
   if (readmeRes) {
     parts.push(`README.md:\n${(await readmeRes.text()).slice(0, 8000)}`);

@@ -31,11 +31,15 @@ function ensureSchema(): Promise<void> {
           blueprint   JSONB,
           generated   JSONB,
           demo        BOOLEAN NOT NULL DEFAULT false,
+          share_id    TEXT,
           created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;
       await sql`CREATE INDEX IF NOT EXISTS projects_owner_idx ON projects (owner)`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS projects_share_id_idx ON projects (share_id) WHERE share_id IS NOT NULL`;
+      // Migration for existing tables
+      await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS share_id TEXT`;
     })();
   }
   return ready;
@@ -52,6 +56,7 @@ function rowToProject(r: any): Project {
     generated: r.generated ?? undefined,
     demo: r.demo ?? undefined,
     owner: r.owner,
+    shareId: r.share_id ?? undefined,
     createdAt: new Date(r.created_at).toISOString(),
     updatedAt: new Date(r.updated_at).toISOString(),
   };
@@ -109,9 +114,19 @@ export async function updateProject(
       blueprint   = ${next.blueprint ? JSON.stringify(next.blueprint) : null}::jsonb,
       generated   = ${next.generated ? JSON.stringify(next.generated) : null}::jsonb,
       demo        = ${next.demo ?? false},
+      share_id    = ${next.shareId ?? null},
       updated_at  = now()
     WHERE id = ${id} AND owner = ${owner}
     RETURNING *
+  `;
+  return rows[0] ? rowToProject(rows[0]) : null;
+}
+
+export async function getProjectByShareId(shareId: string): Promise<Project | null> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT * FROM projects WHERE share_id = ${shareId} LIMIT 1
   `;
   return rows[0] ? rowToProject(rows[0]) : null;
 }

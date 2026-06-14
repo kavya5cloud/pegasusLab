@@ -8,7 +8,7 @@ import { getOwner } from "@/lib/session";
 export const maxDuration = 300;
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -18,22 +18,27 @@ export async function POST(
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
+  const overrideKeys = {
+    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
+    google:    req.headers.get("x-google-key") ?? undefined,
+    github:    req.headers.get("x-github-token") ?? undefined,
+  };
+
   try {
-    const demo = isDemoMode();
+    const demo = isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google;
     let blueprint;
     if (demo) {
       blueprint = demoBlueprint(project);
     } else {
-      // Pull real context for any GitHub repo cards on the board.
       const githubContext: Record<string, string> = {};
       await Promise.all(
         project.items
           .filter((i) => i.kind === "github" && i.content.trim())
           .map(async (i) => {
-            githubContext[i.id] = await fetchRepoContext(i.content.trim());
+            githubContext[i.id] = await fetchRepoContext(i.content.trim(), overrideKeys.github);
           })
       );
-      blueprint = await generateBlueprint(project, githubContext);
+      blueprint = await generateBlueprint(project, githubContext, overrideKeys);
     }
     const updated = await updateProject(id, { blueprint, demo }, owner);
     return NextResponse.json(updated);

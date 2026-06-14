@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -17,12 +17,17 @@ import { Icon } from "./icons";
 import type { BoardItem, ItemKind } from "@/lib/types";
 
 const KIND_META: Record<ItemKind, { icon: string; label: string; accent: string }> = {
-  idea: { icon: "idea", label: "Idea", accent: "#b45309" },
-  code: { icon: "code", label: "Code", accent: "#0f766e" },
-  github: { icon: "github", label: "GitHub repo", accent: "#6d28d9" },
-  figma: { icon: "figma", label: "Figma design", accent: "#be123c" },
-  image: { icon: "image", label: "Screenshot", accent: "#1d4ed8" },
-  doc: { icon: "doc", label: "Doc", accent: "#57534e" },
+  idea:         { icon: "idea",     label: "Idea",           accent: "#b45309" },
+  code:         { icon: "code",     label: "Code",           accent: "#0f766e" },
+  github:       { icon: "github",   label: "GitHub repo",    accent: "#6d28d9" },
+  figma:        { icon: "figma",    label: "Figma design",   accent: "#be123c" },
+  image:        { icon: "image",    label: "Screenshot",     accent: "#1d4ed8" },
+  doc:          { icon: "doc",      label: "Document",       accent: "#57534e" },
+  voice:        { icon: "mic",      label: "Voice note",     accent: "#b45309" },
+  requirement:  { icon: "doc",      label: "Requirement",    accent: "#15803d" },
+  api:          { icon: "api",      label: "API spec",       accent: "#0f766e" },
+  database:     { icon: "database", label: "DB schema",      accent: "#6d28d9" },
+  conversation: { icon: "idea",     label: "Conversation",   accent: "#0369a1" },
 };
 
 type CardData = {
@@ -31,6 +36,128 @@ type CardData = {
   onDelete: (id: string) => void;
   [key: string]: unknown;
 };
+
+function VoiceRecorder({ item, onPatch }: { item: BoardItem; onPatch: (id: string, p: Partial<BoardItem>) => void }) {
+  const [recording, setRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const srRef = useRef<any>(null);
+  const transcriptRef = useRef("");
+
+  const hasAudio = !!item.dataUrl;
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const reader = new FileReader();
+        reader.onload = () => {
+          onPatch(item.id, {
+            dataUrl: reader.result as string,
+            content: transcriptRef.current || item.content,
+          });
+        };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mr.start();
+      mediaRef.current = mr;
+      setRecording(true);
+      setSeconds(0);
+      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+
+      // Live transcription via Web Speech API (no key needed)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+      if (SR) {
+        const sr = new SR();
+        sr.continuous = true;
+        sr.interimResults = true;
+        transcriptRef.current = item.content ?? "";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sr.onresult = (e: any) => {
+          let text = "";
+          for (let i = 0; i < e.results.length; i++) {
+            text += e.results[i][0].transcript + " ";
+          }
+          transcriptRef.current = text.trim();
+          onPatch(item.id, { content: transcriptRef.current });
+        };
+        sr.start();
+        srRef.current = sr;
+      }
+    } catch {
+      alert("Microphone access denied.");
+    }
+  }
+
+  function stopRecording() {
+    mediaRef.current?.stop();
+    mediaRef.current = null;
+    srRef.current?.stop();
+    srRef.current = null;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setRecording(false);
+  }
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  return (
+    <div className="space-y-2">
+      {hasAudio ? (
+        <audio controls src={item.dataUrl} className="w-full nodrag" style={{ height: 36 }} />
+      ) : null}
+      <div className="flex items-center gap-2">
+        {recording ? (
+          <button
+            onClick={stopRecording}
+            className="nodrag flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-mono"
+            style={{ background: "#ef4444", color: "#fff" }}
+          >
+            <span className="inline-block h-2 w-2 rounded-sm bg-white animate-pulse" />
+            {fmt(seconds)} — Stop
+          </button>
+        ) : (
+          <button
+            onClick={startRecording}
+            className="nodrag flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-mono"
+            style={{ background: "var(--background)", border: "1px solid var(--line)", color: "var(--foreground)" }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm6 10a1 1 0 0 1 2 0 8 8 0 0 1-7 7.94V21h3a1 1 0 0 1 0 2H8a1 1 0 0 1 0-2h3v-2.06A8 8 0 0 1 4 11a1 1 0 0 1 2 0 6 6 0 0 0 12 0z"/>
+            </svg>
+            {hasAudio ? "Re-record" : "Record"}
+          </button>
+        )}
+        {hasAudio && !recording && (
+          <button
+            onClick={() => onPatch(item.id, { dataUrl: "" })}
+            className="nodrag text-[10px] font-mono"
+            style={{ color: "var(--muted)" }}
+          >
+            clear
+          </button>
+        )}
+      </div>
+      <textarea
+        className="nodrag nowheel w-full rounded px-2 py-1.5 text-[11px] outline-none resize-none"
+        style={{ background: "var(--background)", border: "1px solid var(--line)", minHeight: 50 }}
+        value={item.content}
+        placeholder="Transcript or notes…"
+        onChange={(e) => onPatch(item.id, { content: e.target.value })}
+      />
+    </div>
+  );
+}
 
 function BoardCard({ data }: NodeProps<Node<CardData>>) {
   const { item, onPatch, onDelete } = data;
@@ -71,7 +198,9 @@ function BoardCard({ data }: NodeProps<Node<CardData>>) {
           onChange={(e) => onPatch(item.id, { title: e.target.value })}
         />
 
-        {item.kind === "image" ? (
+        {item.kind === "voice" ? (
+          <VoiceRecorder item={item} onPatch={onPatch} />
+        ) : item.kind === "image" ? (
           <>
             {item.dataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -116,11 +245,13 @@ function BoardCard({ data }: NodeProps<Node<CardData>>) {
             }}
             value={item.content}
             placeholder={
-              item.kind === "idea"
-                ? "Write the idea…"
-                : item.kind === "code"
-                  ? "Paste code…"
-                  : "Paste docs / notes…"
+              item.kind === "idea"         ? "Write the idea…"
+              : item.kind === "code"       ? "Paste code…"
+              : item.kind === "requirement"? "As a user, I want to… so that…"
+              : item.kind === "api"        ? "GET /endpoint\n\nRequest / response shape…"
+              : item.kind === "database"   ? "Table: name\n  id   uuid pk\n  …"
+              : item.kind === "conversation"? "Paste meeting notes, chat log, interview…"
+              : "Paste docs / notes…"
             }
             onChange={(e) => onPatch(item.id, { content: e.target.value })}
           />
@@ -271,12 +402,17 @@ function BoardInner({
   );
 
   const TOOLBAR: { kind: ItemKind; hint: string }[] = [
-    { kind: "idea", hint: "An idea or feature in plain words" },
-    { kind: "code", hint: "Paste a code snippet or file" },
-    { kind: "github", hint: "Link a GitHub repository" },
-    { kind: "figma", hint: "Link a Figma file" },
-    { kind: "image", hint: "Attach a design screenshot" },
-    { kind: "doc", hint: "Notes, specs, documentation" },
+    { kind: "idea",         hint: "An idea or feature in plain words" },
+    { kind: "requirement",  hint: "A product requirement or user story" },
+    { kind: "code",         hint: "Paste a code snippet or file" },
+    { kind: "api",          hint: "API spec, endpoint or contract" },
+    { kind: "database",     hint: "Database schema or data model" },
+    { kind: "github",       hint: "Link a GitHub repository" },
+    { kind: "figma",        hint: "Link a Figma file" },
+    { kind: "image",        hint: "Attach a design screenshot" },
+    { kind: "doc",          hint: "Notes, specs, documentation" },
+    { kind: "conversation", hint: "A chat log, interview or meeting notes" },
+    { kind: "voice",        hint: "Record a voice note or spoken idea" },
   ];
 
   return (

@@ -24,6 +24,7 @@ export async function PATCH(
   const patch: Record<string, unknown> = {};
   if (Array.isArray(body.items)) patch.items = body.items;
   if (Array.isArray(body.generated)) patch.generated = body.generated;
+  if (body.blueprint && typeof body.blueprint === "object") patch.blueprint = body.blueprint;
   if (typeof body.name === "string") patch.name = body.name;
   if (typeof body.description === "string") patch.description = body.description;
   const owner = await getOwner();

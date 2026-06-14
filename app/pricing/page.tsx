@@ -223,8 +223,8 @@ export default function PricingPage() {
           <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--hairline)" }}>
             {/* Column headers */}
             <div
-              className="grid grid-cols-4 items-center"
-              style={{ borderBottom: "1px solid var(--hairline)", background: "white" }}
+              className="grid items-center"
+              style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr", borderBottom: "1px solid var(--hairline)", background: "white" }}
             >
               <div className="px-5 py-3.5" />
               {["Hobby", "Pro", "Team"].map((plan) => (
@@ -254,13 +254,14 @@ export default function PricingPage() {
             ].map(([feature, hobby, pro, team], i) => (
               <div
                 key={i}
-                className="grid grid-cols-4 items-center"
+                className="grid items-center"
                 style={{
+                  gridTemplateColumns: "2fr 1fr 1fr 1fr",
                   borderBottom: i < 9 ? "1px solid var(--hairline)" : undefined,
                   background: i % 2 === 0 ? "white" : "var(--paper)",
                 }}
               >
-                <div className="px-5 py-3.5 text-[13px] col-span-1" style={{ color: "var(--ink)" }}>
+                <div className="px-5 py-3.5 text-[13px]" style={{ color: "var(--ink)" }}>
                   {feature}
                 </div>
                 {[hobby, pro, team].map((val, j) => (

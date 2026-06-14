@@ -92,6 +92,12 @@ export async function updateProject(
   return projects[idx];
 }
 
+export async function getProjectByShareId(shareId: string): Promise<Project | null> {
+  if (USE_DB) return db.getProjectByShareId(shareId);
+  const projects = await readAll();
+  return projects.find((p) => p.shareId === shareId) ?? null;
+}
+
 export async function deleteProject(
   id: string,
   owner: string = "demo"

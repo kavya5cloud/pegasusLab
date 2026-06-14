@@ -34,7 +34,12 @@ export async function POST(
 
   const encoder = new TextEncoder();
 
-  if (isDemoMode()) {
+  const overrideKeys = {
+    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
+    google:    req.headers.get("x-google-key") ?? undefined,
+  };
+
+  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google) {
     const reply = demoChatReply(messages[messages.length - 1].content);
     const chunks = reply.match(/[\s\S]{1,60}/g) ?? [];
     const stream = new ReadableStream<Uint8Array>({
@@ -51,7 +56,7 @@ export async function POST(
     });
   }
 
-  const messageStream = streamChat(project, messages);
+  const messageStream = streamChat(project, messages, overrideKeys);
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {

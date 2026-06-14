@@ -123,12 +123,50 @@ const ICONS: Record<string, ReactNode> = {
       <path d="m7 11 10-4M7 13l10 4" />
     </>
   ),
+  mic: (
+    <>
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <path d="M12 19v3" />
+      <path d="M9 22h6" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
   bolt: <path d="M13 2 5 14h6l-1 8 8-12h-6l1-8z" />,
   refresh: (
     <>
       <path d="M21 12a9 9 0 1 1-2.6-6.4" />
       <path d="M21 3v6h-6" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m21 21-4.5-4.5" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </>
+  ),
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M18.5 5.5l-1.4 1.4M6.9 17.1l-1.4 1.4" />
+    </>
+  ),
+  "chevron-down": <path d="m6 9 6 6 6-6" />,
+  "chevron-right": <path d="m9 18 6-6-6-6" />,
+  "sort": (
+    <>
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </>
+  ),
+  "layout-list": (
+    <>
+      <rect x="3" y="5" width="6" height="6" rx="1" />
+      <path d="M13 6h8M13 10h5M3 19h18M3 15h18" />
     </>
   ),
 };

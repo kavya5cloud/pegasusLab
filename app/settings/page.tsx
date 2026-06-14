@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [googleKey, setGoogleKey] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -29,6 +30,7 @@ export default function SettingsPage() {
     // Load stored tokens from localStorage (client-side only config)
     if (typeof window !== "undefined") {
       setApiKey(localStorage.getItem("pegasus_anthropic_key") ?? "");
+      setGoogleKey(localStorage.getItem("pegasus_google_key") ?? "");
       setGithubToken(localStorage.getItem("pegasus_github_token") ?? "");
     }
   }, [router]);
@@ -42,6 +44,8 @@ export default function SettingsPage() {
     if (typeof window !== "undefined") {
       if (apiKey.trim()) localStorage.setItem("pegasus_anthropic_key", apiKey.trim());
       else localStorage.removeItem("pegasus_anthropic_key");
+      if (googleKey.trim()) localStorage.setItem("pegasus_google_key", googleKey.trim());
+      else localStorage.removeItem("pegasus_google_key");
       if (githubToken.trim()) localStorage.setItem("pegasus_github_token", githubToken.trim());
       else localStorage.removeItem("pegasus_github_token");
     }
@@ -161,6 +165,25 @@ export default function SettingsPage() {
                     rel="noreferrer"
                     className="underline hover:text-black"
                   >
+                    Get yours →
+                  </a>
+                </p>
+              </div>
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--ink-muted)" }}>
+                  Google AI (Gemini) API key
+                </label>
+                <input
+                  value={googleKey}
+                  onChange={(e) => setGoogleKey(e.target.value)}
+                  type="password"
+                  placeholder="AIza…"
+                  className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none font-mono focus:border-black transition-colors"
+                  style={{ borderColor: "var(--hairline)" }}
+                />
+                <p className="text-[11px] mt-1" style={{ color: "var(--ink-muted)" }}>
+                  Alternative to Anthropic — uses Gemini 2.0 Flash.{" "}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="underline hover:text-black">
                     Get yours →
                   </a>
                 </p>

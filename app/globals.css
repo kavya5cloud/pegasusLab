@@ -29,14 +29,13 @@
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
-  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .serif {
@@ -89,6 +88,48 @@ body {
 }
 .animate-pulse-soft {
   animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+/* ─── Dark mode ──────────────────────────────────────────────────────────────
+   Applied via .dark on <html>. Overrides the light marketing palette and the
+   workspace surface. The workspace already has its own dark-adjacent vars;
+   here we deepen them so the whole app feels cohesive in dark mode.
+   --------------------------------------------------------------------------- */
+html.dark {
+  --paper: #111110;
+  --ink: #e8e6e3;
+  --ink-muted: #6b6966;
+  --hairline: #27251f;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+html.dark .workspace {
+  --background: #0e0e0d;
+  --panel: #141413;
+  --panel-2: #1a1917;
+  --line: #2a2825;
+  --foreground: #e8e6e3;
+  --muted: #6b6966;
+  --accent: #e8e6e3;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #f43f5e;
+}
+
+html.dark .workspace .react-flow__controls button {
+  background: var(--panel) !important;
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--foreground) !important;
+  fill: var(--foreground) !important;
+}
+
+html.dark .workspace .react-flow__minimap {
+  background: var(--panel) !important;
 }
 
 /* Sky hero for the landing page */
