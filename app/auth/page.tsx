@@ -39,16 +39,13 @@ export default function AuthPage() {
     const resolvedName = name.trim() || email.split("@")[0];
     signIn({ name: resolvedName, email: email.trim() });
     if (mode === "signup") {
-      // Fire-and-forget welcome email — don't block navigation on it.
       fetch("/api/welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: resolvedName, email: email.trim() }),
       }).catch(() => {});
-      router.push("/pricing?welcome=1");
-    } else {
-      router.push(next);
     }
+    router.push(next);
   }
 
   // Real OAuth when the provider is configured; otherwise a graceful demo

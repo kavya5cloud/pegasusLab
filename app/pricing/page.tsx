@@ -24,7 +24,7 @@ const PLANS = [
       "Community support",
     ],
     cta: "Start building free",
-    href: "/auth?mode=signup",
+    href: "/auth?mode=signup&next=%2Fprojects",
     highlight: false,
   },
   {
