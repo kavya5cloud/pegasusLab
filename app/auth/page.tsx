@@ -53,13 +53,8 @@ export default function AuthPage() {
   function oauth(provider: "google" | "github") {
     if (providers[provider]) {
       oauthSignIn(provider, { callbackUrl: next });
-      return;
     }
-    signIn({
-      name: name.trim() || (provider === "google" ? "Google developer" : "GitHub developer"),
-      email: email.trim() || `dev@${provider}.demo`,
-    });
-    router.push(next);
+    // No fallback — button is disabled when provider isn't configured
   }
 
   return (
@@ -110,7 +105,8 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => oauth("google")}
-              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium border hover:bg-neutral-50 transition-colors"
+              disabled={!providers.google}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-neutral-50"
               style={{ borderColor: "var(--hairline)", color: "var(--ink)" }}
             >
               <GoogleMark size={16} />
@@ -119,7 +115,8 @@ export default function AuthPage() {
             <button
               type="button"
               onClick={() => oauth("github")}
-              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium text-white bg-[#141414] hover:bg-[#262626] transition-colors"
+              disabled={!providers.github}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium text-white bg-[#141414] transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-[#262626]"
             >
               <Icon name="github" size={15} strokeWidth={1.9} />
               Continue with GitHub
