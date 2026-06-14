@@ -17,6 +17,7 @@ import Image from "next/image";
 import { Icon } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import type { Blueprint, BoardItem, Gap, Project } from "@/lib/types";
+import { userApiHeaders } from "@/lib/auth";
 
 type View = "board" | "blueprint";
 type Tab = "gaps" | "summary" | "graph";
@@ -33,18 +34,6 @@ type SummarySection =
   | "testing"
   | "deploy"
   | "memory";
-
-function userApiHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const key = localStorage.getItem("pegasus_anthropic_key");
-  const gkey = localStorage.getItem("pegasus_google_key");
-  const gh = localStorage.getItem("pegasus_github_token");
-  const headers: Record<string, string> = {};
-  if (key)  headers["x-anthropic-key"] = key;
-  if (gkey) headers["x-google-key"] = gkey;
-  if (gh)   headers["x-github-token"] = gh;
-  return headers;
-}
 
 function blueprintToMarkdown(name: string, bp: import("@/lib/types").Blueprint): string {
   const lines: string[] = [`# ${name} — Product Blueprint`, "", bp.summary, ""];

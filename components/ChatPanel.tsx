@@ -3,16 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import type { Project } from "@/lib/types";
-
-function userApiHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const key  = localStorage.getItem("pegasus_anthropic_key");
-  const gkey = localStorage.getItem("pegasus_google_key");
-  const headers: Record<string, string> = {};
-  if (key)  headers["x-anthropic-key"] = key;
-  if (gkey) headers["x-google-key"] = gkey;
-  return headers;
-}
+import { userApiHeaders } from "@/lib/auth";
 
 interface Turn {
   role: "user" | "assistant";

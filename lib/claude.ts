@@ -70,20 +70,20 @@ function geminiModel(): string {
   return process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 }
 
-function openaiClient(): OpenAI {
-  if (process.env.GROQ_API_KEY) {
-    return new OpenAI({
-      apiKey: process.env.GROQ_API_KEY,
-      baseURL: "https://api.groq.com/openai/v1",
-    });
+type OllamaOpts = { url?: string; model?: string };
+
+function openaiClient(ollama?: OllamaOpts): OpenAI {
+  if (ollama?.url) {
+    return new OpenAI({ apiKey: "ollama", baseURL: ollama.url });
   }
-  return new OpenAI({
-    apiKey: "ollama",
-    baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1",
-  });
+  if (process.env.GROQ_API_KEY) {
+    return new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: "https://api.groq.com/openai/v1" });
+  }
+  return new OpenAI({ apiKey: "ollama", baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1" });
 }
 
-function openaiModel(): string {
+function openaiModel(ollama?: OllamaOpts): string {
+  if (ollama?.model) return ollama.model;
   if (process.env.GROQ_API_KEY) return process.env.GROQ_MODEL ?? "llama-3.1-70b-versatile";
   return process.env.OLLAMA_MODEL ?? "llama3.1";
 }
@@ -392,17 +392,29 @@ function boardToText(project: Project, githubContext: Record<string, string> = {
 
 // ─── Blueprint generation ─────────────────────────────────────────────────────
 
-export type OverrideKeys = { anthropic?: string; google?: string };
+export type OverrideKeys = {
+  anthropic?: string;
+  google?: string;
+  ollamaUrl?: string;
+  ollamaModel?: string;
+};
+
+function resolveBackend(keys: OverrideKeys): Backend {
+  if (keys.anthropic) return "anthropic";
+  if (keys.google) return "gemini";
+  if (keys.ollamaUrl || keys.ollamaModel) return "ollama";
+  return getBackend();
+}
 
 export async function generateBlueprint(
   project: Project,
   githubContext: Record<string, string> = {},
   keys: OverrideKeys = {}
 ): Promise<Blueprint> {
-  const backend = keys.anthropic ? "anthropic" : keys.google ? "gemini" : getBackend();
+  const backend = resolveBackend(keys);
   if (backend === "anthropic") return generateBlueprintAnthropic(project, githubContext, keys.anthropic);
   if (backend === "gemini") return generateBlueprintGemini(project, githubContext, keys.google);
-  return generateBlueprintOpenAI(project, githubContext);
+  return generateBlueprintOpenAI(project, githubContext, { url: keys.ollamaUrl, model: keys.ollamaModel });
 }
 
 function anthropicClient(apiKey?: string) {
@@ -471,10 +483,11 @@ async function generateBlueprintAnthropic(
 
 async function generateBlueprintOpenAI(
   project: Project,
-  githubContext: Record<string, string>
+  githubContext: Record<string, string>,
+  ollama?: OllamaOpts
 ): Promise<Blueprint> {
-  const client = openaiClient();
-  const model = openaiModel();
+  const client = openaiClient(ollama);
+  const model = openaiModel(ollama);
   const text = boardToText(project, githubContext);
 
   const response = await client.chat.completions.create({
@@ -573,7 +586,8 @@ export async function validateGapAgainstBlueprint(
 // ─── Code generation ──────────────────────────────────────────────────────────
 
 export function streamGapCode(project: Project, gap: Gap, keys: OverrideKeys = {}): AsyncIterable<string> {
-  const backend = keys.anthropic ? "anthropic" : keys.google ? "gemini" : getBackend();
+  const backend = resolveBackend(keys);
+  const ollamaOpts: OllamaOpts = { url: keys.ollamaUrl, model: keys.ollamaModel };
   const bp = project.blueprint;
 
   const blueprintContext = bp ? {
@@ -617,8 +631,8 @@ export function streamGapCode(project: Project, gap: Gap, keys: OverrideKeys = {
   }
 
   return openaiTextStream(
-    openaiClient().chat.completions.stream({
-      model: openaiModel(),
+    openaiClient(ollamaOpts).chat.completions.stream({
+      model: openaiModel(ollamaOpts),
       max_tokens: 16000,
       stream: true,
       messages: [
@@ -646,7 +660,8 @@ export async function generatePreviewApp(
   gap: Gap,
   keys: OverrideKeys = {}
 ): Promise<string> {
-  const backend = keys.anthropic ? "anthropic" : keys.google ? "gemini" : getBackend();
+  const backend = resolveBackend(keys);
+  const ollamaOpts: OllamaOpts = { url: keys.ollamaUrl, model: keys.ollamaModel };
   const bp = project.blueprint;
 
   const context = {
@@ -678,8 +693,8 @@ export async function generatePreviewApp(
     });
     raw = res.text ?? "";
   } else {
-    const res = await openaiClient().chat.completions.create({
-      model: openaiModel(),
+    const res = await openaiClient(ollamaOpts).chat.completions.create({
+      model: openaiModel(ollamaOpts),
       max_tokens: 8000,
       messages: [
         { role: "system", content: PREVIEW_SYSTEM },
@@ -700,7 +715,8 @@ export interface ChatTurn {
 }
 
 export function streamChat(project: Project, messages: ChatTurn[], keys: OverrideKeys = {}): AsyncIterable<string> {
-  const backend = keys.anthropic ? "anthropic" : keys.google ? "gemini" : getBackend();
+  const backend = resolveBackend(keys);
+  const ollamaOpts: OllamaOpts = { url: keys.ollamaUrl, model: keys.ollamaModel };
   const bp = project.blueprint;
 
   const blueprintSummary = bp ? {
@@ -741,8 +757,8 @@ export function streamChat(project: Project, messages: ChatTurn[], keys: Overrid
   }
 
   return openaiTextStream(
-    openaiClient().chat.completions.stream({
-      model: openaiModel(),
+    openaiClient(ollamaOpts).chat.completions.stream({
+      model: openaiModel(ollamaOpts),
       max_tokens: 8000,
       stream: true,
       messages: [{ role: "system", content: systemWithContext }, ...messages],

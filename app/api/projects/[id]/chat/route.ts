@@ -35,11 +35,13 @@ export async function POST(
   const encoder = new TextEncoder();
 
   const overrideKeys = {
-    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
-    google:    req.headers.get("x-google-key") ?? undefined,
+    anthropic:   req.headers.get("x-anthropic-key") ?? undefined,
+    google:      req.headers.get("x-google-key") ?? undefined,
+    ollamaUrl:   req.headers.get("x-ollama-url") ?? undefined,
+    ollamaModel: req.headers.get("x-ollama-model") ?? undefined,
   };
 
-  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google) {
+  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google && !overrideKeys.ollamaUrl) {
     const reply = demoChatReply(messages[messages.length - 1].content);
     const chunks = reply.match(/[\s\S]{1,60}/g) ?? [];
     const stream = new ReadableStream<Uint8Array>({

@@ -28,13 +28,15 @@ export async function POST(
   }
 
   const overrideKeys = {
-    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
-    google:    req.headers.get("x-google-key") ?? undefined,
+    anthropic:   req.headers.get("x-anthropic-key") ?? undefined,
+    google:      req.headers.get("x-google-key") ?? undefined,
+    ollamaUrl:   req.headers.get("x-ollama-url") ?? undefined,
+    ollamaModel: req.headers.get("x-ollama-model") ?? undefined,
   };
 
   const encoder = new TextEncoder();
 
-  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google) {
+  if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google && !overrideKeys.ollamaUrl) {
     // Simulate streaming so the UI behaves identically without a key.
     const chunks = DEMO_CODE.match(/[\s\S]{1,80}/g) ?? [];
     const stream = new ReadableStream<Uint8Array>({

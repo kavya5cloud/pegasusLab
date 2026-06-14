@@ -19,13 +19,15 @@ export async function POST(
   }
 
   const overrideKeys = {
-    anthropic: req.headers.get("x-anthropic-key") ?? undefined,
-    google:    req.headers.get("x-google-key") ?? undefined,
-    github:    req.headers.get("x-github-token") ?? undefined,
+    anthropic:   req.headers.get("x-anthropic-key") ?? undefined,
+    google:      req.headers.get("x-google-key") ?? undefined,
+    ollamaUrl:   req.headers.get("x-ollama-url") ?? undefined,
+    ollamaModel: req.headers.get("x-ollama-model") ?? undefined,
+    github:      req.headers.get("x-github-token") ?? undefined,
   };
 
   try {
-    const demo = isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google;
+    const demo = isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google && !overrideKeys.ollamaUrl;
     let blueprint;
     if (demo) {
       blueprint = demoBlueprint(project);

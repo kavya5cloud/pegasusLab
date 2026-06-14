@@ -40,7 +40,12 @@ export default function AuthPage() {
       name: name.trim() || email.split("@")[0],
       email: email.trim(),
     });
-    router.push(next);
+    // New signups → settings to add their AI key; returning users → intended dest
+    if (mode === "signup") {
+      router.push("/settings?setup=1");
+    } else {
+      router.push(next);
+    }
   }
 
   // Real OAuth when the provider is configured; otherwise a graceful demo
@@ -95,7 +100,7 @@ export default function AuthPage() {
           <p className="text-white/85 text-[13px] text-center mt-4 mb-8 max-w-sm">
             {mode === "signin"
               ? "Sign in to open your whiteboards and blueprints."
-              : "Create an account — drop your first idea in under a minute."}
+              : "Free forever with your own Gemini API key — no credit card, no subscription."}
           </p>
 
           <form

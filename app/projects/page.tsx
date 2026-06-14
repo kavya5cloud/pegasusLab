@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut as oauthSignOut } from "next-auth/react";
-import { getUser, signOut, type SessionUser } from "@/lib/auth";
+import { getUser, hasAnyApiKey, signOut, type SessionUser } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import type { GapSeverity, Project } from "@/lib/types";
 
@@ -103,6 +103,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("updated");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showKeyBanner, setShowKeyBanner] = useState(false);
   const promptRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -118,6 +119,7 @@ export default function Dashboard() {
     const u = getUser();
     if (!u) { router.replace("/auth?next=%2Fprojects"); return; }
     setUser(u);
+    setShowKeyBanner(!hasAnyApiKey());
     load();
     const carried = new URLSearchParams(window.location.search).get("prompt");
     if (carried) { setPrompt(carried); setTimeout(() => promptRef.current?.focus(), 100); }
@@ -454,6 +456,41 @@ export default function Dashboard() {
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           <main className="px-6 py-6 max-w-5xl w-full mx-auto">
+
+            {/* Onboarding banner — shown when no AI key is configured */}
+            {showKeyBanner && (
+              <div
+                className="mb-5 rounded-2xl border px-5 py-4 flex items-start gap-4"
+                style={{ background: "rgba(99,102,241,0.05)", borderColor: "rgba(99,102,241,0.25)" }}
+              >
+                <div className="text-2xl shrink-0">⚡</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold" style={{ color: "#4338ca" }}>
+                    Add your Gemini API key to activate the AI engine
+                  </p>
+                  <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
+                    Pegasus is free forever when you bring your own key — no credit card needed.
+                    Gemini 2.0 Flash has a generous free quota.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/settings?setup=1"
+                    className="text-[12px] font-medium rounded-full px-4 py-1.5 text-white transition-colors"
+                    style={{ background: "#4f46e5" }}
+                  >
+                    Add key →
+                  </Link>
+                  <button
+                    onClick={() => setShowKeyBanner(false)}
+                    className="text-[12px] rounded-full px-3 py-1.5 border transition-colors hover:bg-neutral-50"
+                    style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)" }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Page title + quick-start */}
             <div className="mb-6">
