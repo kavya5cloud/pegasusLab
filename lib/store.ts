@@ -110,3 +110,10 @@ export async function deleteProject(
   await writeAll(next);
   return true;
 }
+
+export async function countProjectsThisWeek(owner: string = "demo"): Promise<number> {
+  if (USE_DB) return db.countProjectsThisWeek(owner);
+  const projects = await readAll();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  return projects.filter((p) => ownsRecord(p, owner) && p.createdAt >= weekAgo).length;
+}

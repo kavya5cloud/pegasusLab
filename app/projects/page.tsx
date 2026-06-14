@@ -104,6 +104,7 @@ export default function Dashboard() {
   const [sort, setSort] = useState<SortKey>("updated");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showKeyBanner, setShowKeyBanner] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
   const promptRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -157,6 +158,7 @@ export default function Dashboard() {
           items: [{ id: crypto.randomUUID().slice(0, 8), kind: "idea", title: "The idea", content: text, x: 0, y: 0 }],
         }),
       });
+      if (res.status === 429) { setLimitHit(true); setCreating(false); return; }
       const project = await res.json();
       router.push(`/project/${project.id}`);
     } catch { setCreating(false); }
@@ -193,6 +195,7 @@ export default function Dashboard() {
           items: p.items,
         }),
       });
+      if (res.status === 429) { setLimitHit(true); return; }
       if (!res.ok) throw new Error();
       toast("Build duplicated");
       load();
@@ -255,6 +258,11 @@ export default function Dashboard() {
   });
 
   const activeLabel = STATS.find((s) => s.key === filter)?.label ?? "All builds";
+
+  // Count projects created in the last 7 days for the usage pill
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const usedThisWeek = projects.filter((p) => p.createdAt >= weekAgo).length;
+  const remaining = Math.max(0, 2 - usedThisWeek);
 
   /* ─── sidebar shared markup ─── */
   function SidebarContent({ onNav }: { onNav?: () => void }) {
@@ -492,9 +500,49 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Weekly limit reached modal */}
+            {limitHit && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.4)" }}>
+                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
+                  <div className="text-4xl mb-4">🚀</div>
+                  <h2 className="text-xl font-semibold mb-2">Weekly limit reached</h2>
+                  <p className="text-[13px] mb-6" style={{ color: "var(--ink-muted)" }}>
+                    The free plan includes <strong>2 new projects per week</strong>. Your allowance resets in 7 days, or upgrade for unlimited builds.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/pricing"
+                      className="w-full bg-black text-white text-[13px] font-medium rounded-xl px-4 py-2.5 hover:bg-neutral-800 transition-colors"
+                    >
+                      Upgrade plan →
+                    </Link>
+                    <button
+                      onClick={() => setLimitHit(false)}
+                      className="w-full text-[13px] rounded-xl border px-4 py-2.5 hover:bg-neutral-50 transition-colors"
+                      style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)" }}
+                    >
+                      Got it, I&apos;ll wait
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Page title + quick-start */}
             <div className="mb-6">
-              <h1 className="serif text-2xl mb-4">Dashboard</h1>
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="serif text-2xl">Dashboard</h1>
+                <span
+                  className="text-[11px] font-mono px-2.5 py-1 rounded-full"
+                  style={{
+                    background: remaining === 0 ? "rgba(220,38,38,0.08)" : "rgba(16,185,129,0.08)",
+                    color: remaining === 0 ? "#dc2626" : "#059669",
+                    border: `1px solid ${remaining === 0 ? "rgba(220,38,38,0.2)" : "rgba(16,185,129,0.2)"}`,
+                  }}
+                >
+                  {remaining === 0 ? "0 builds left this week" : `${remaining} of 2 builds left`}
+                </span>
+              </div>
               <form onSubmit={quickStart}>
                 <div
                   className="bg-white rounded-2xl border shadow-sm p-3.5 flex items-center gap-3"
@@ -510,13 +558,19 @@ export default function Dashboard() {
                   />
                   <button
                     type="submit"
-                    disabled={creating || !prompt.trim()}
+                    disabled={creating || !prompt.trim() || remaining === 0}
                     className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-medium rounded-full px-4 py-1.5 disabled:opacity-40 transition-colors shrink-0"
                   >
                     {creating ? "Opening…" : "Start"}
                     {!creating && <Icon name="arrow-right" size={11} strokeWidth={2.2} />}
                   </button>
                 </div>
+                {remaining === 0 && (
+                  <p className="text-[11px] mt-2 text-center" style={{ color: "var(--ink-muted)" }}>
+                    Weekly limit reached —{" "}
+                    <Link href="/pricing" className="underline hover:text-black">upgrade for unlimited</Link>
+                  </p>
+                )}
               </form>
             </div>
 

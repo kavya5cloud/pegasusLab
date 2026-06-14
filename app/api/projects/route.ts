@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { createProject, listProjects } from "@/lib/store";
+import { countProjectsThisWeek, createProject, listProjects } from "@/lib/store";
 import { getOwner } from "@/lib/session";
 import type { BoardItem } from "@/lib/types";
+
+const FREE_WEEKLY_LIMIT = 2;
 
 export async function GET() {
   const owner = await getOwner();
@@ -18,6 +20,20 @@ export async function POST(req: Request) {
   }
   const items: BoardItem[] = Array.isArray(body.items) ? body.items : [];
   const owner = await getOwner();
+
+  const usedThisWeek = await countProjectsThisWeek(owner);
+  if (usedThisWeek >= FREE_WEEKLY_LIMIT) {
+    return NextResponse.json(
+      {
+        error: "weekly_limit",
+        limit: FREE_WEEKLY_LIMIT,
+        used: usedThisWeek,
+        message: `Free plan allows ${FREE_WEEKLY_LIMIT} new projects per week. Upgrade for unlimited.`,
+      },
+      { status: 429 }
+    );
+  }
+
   const project = await createProject({ name, description, items }, owner);
   return NextResponse.json(project, { status: 201 });
 }

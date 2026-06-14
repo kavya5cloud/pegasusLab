@@ -139,3 +139,14 @@ export async function deleteProject(id: string, owner: string): Promise<boolean>
   `;
   return rows.length > 0;
 }
+
+export async function countProjectsThisWeek(owner: string): Promise<number> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT COUNT(*) AS n FROM projects
+    WHERE owner = ${owner}
+    AND created_at >= NOW() - INTERVAL '7 days'
+  `;
+  return Number(rows[0]?.n ?? 0);
+}
