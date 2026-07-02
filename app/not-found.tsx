@@ -17,7 +17,7 @@ export default function NotFound() {
       />
       <h1 className="serif text-6xl mt-6 mb-3">404</h1>
       <p className="text-[15px] mb-8" style={{ color: "var(--ink-muted)" }}>
-        This page flew away. Let's get you back on the board.
+        This page flew away. Let&apos;s get you back on the board.
       </p>
       <Link
         href="/projects"

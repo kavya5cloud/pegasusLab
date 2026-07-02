@@ -40,6 +40,14 @@ function ensureSchema(): Promise<void> {
       await sql`CREATE UNIQUE INDEX IF NOT EXISTS projects_share_id_idx ON projects (share_id) WHERE share_id IS NOT NULL`;
       // Migration for existing tables
       await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS share_id TEXT`;
+      await sql`
+        CREATE TABLE IF NOT EXISTS users (
+          email         TEXT PRIMARY KEY,
+          name          TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `;
     })();
   }
   return ready;
@@ -143,10 +151,37 @@ export async function deleteProject(id: string, owner: string): Promise<boolean>
 export async function countProjectsThisWeek(owner: string): Promise<number> {
   await ensureSchema();
   const sql = getSql();
+  // Demo/sample showcase projects don't count against the weekly allowance.
   const rows = await sql`
     SELECT COUNT(*) AS n FROM projects
     WHERE owner = ${owner}
+    AND demo IS NOT TRUE
     AND created_at >= NOW() - INTERVAL '7 days'
   `;
   return Number(rows[0]?.n ?? 0);
+}
+
+// ─── Users (credentials auth) ────────────────────────────────────────────────
+
+export interface UserRecord {
+  email: string;
+  name: string;
+  passwordHash: string;
+}
+
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = await sql`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
+  if (!rows[0]) return null;
+  return { email: rows[0].email, name: rows[0].name, passwordHash: rows[0].password_hash };
+}
+
+export async function createUser(user: UserRecord): Promise<void> {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    INSERT INTO users (email, name, password_hash)
+    VALUES (${user.email}, ${user.name}, ${user.passwordHash})
+  `;
 }

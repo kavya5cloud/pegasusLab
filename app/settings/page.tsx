@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { signOut as oauthSignOut } from "next-auth/react";
-import { getUser, signIn, signOut, type SessionUser } from "@/lib/auth";
+import { fetchUser, signIn, signOut, type SessionUser } from "@/lib/auth";
 
 function KeyInput({
   label,
@@ -84,14 +84,15 @@ export default function SettingsPage() {
   const [setup, setSetup] = useState(false);
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) {
-      router.replace("/auth?next=%2Fsettings");
-      return;
-    }
-    setUser(u);
-    setName(u.name);
-    setEmail(u.email);
+    fetchUser().then((u) => {
+      if (!u) {
+        router.replace("/auth?next=%2Fsettings");
+        return;
+      }
+      setUser(u);
+      setName(u.name);
+      setEmail(u.email);
+    });
     const params = new URLSearchParams(window.location.search);
     setSetup(params.get("setup") === "1");
     if (typeof window !== "undefined") {

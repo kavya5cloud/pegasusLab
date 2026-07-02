@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { signIn as oauthSignIn } from "next-auth/react";
 import { Icon } from "@/components/icons";
 import { GoogleMark } from "@/components/icons";
-import { getUser, signIn } from "@/lib/auth";
+import { fetchUser, signIn } from "@/lib/auth";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -16,6 +16,8 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [next, setNext] = useState("/projects");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<{ google: boolean; github: boolean }>({
     google: false,
     github: false,
@@ -26,26 +28,55 @@ export default function AuthPage() {
     if (params.get("mode") === "signup") setMode("signup");
     const n = params.get("next");
     if (n) setNext(n);
-    if (getUser()) router.replace(n || "/projects");
+    // Already signed in (localStorage or NextAuth session)? Straight through.
+    fetchUser().then((u) => { if (u) router.replace(n || "/projects"); });
     fetch("/api/status")
       .then((r) => r.json())
       .then((d) => d.auth && setProviders(d.auth))
       .catch(() => {});
   }, [router]);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
-    const resolvedName = name.trim() || email.split("@")[0];
-    signIn({ name: resolvedName, email: email.trim() });
-    if (mode === "signup") {
-      fetch("/api/welcome", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: resolvedName, email: email.trim() }),
-      }).catch(() => {});
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password || busy) return;
+    setBusy(true);
+    setError(null);
+    const resolvedName = name.trim() || cleanEmail.split("@")[0];
+    try {
+      if (mode === "signup") {
+        const res = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: resolvedName, email: cleanEmail, password }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Could not create your account.");
+          setBusy(false);
+          return;
+        }
+      }
+      const result = await oauthSignIn("credentials", {
+        email: cleanEmail,
+        password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setError(
+          mode === "signin"
+            ? "Wrong email or password — or no account yet. Try creating one."
+            : "Account created but sign-in failed — try signing in."
+        );
+        setBusy(false);
+        return;
+      }
+      signIn({ name: resolvedName, email: cleanEmail });
+      router.push(next);
+    } catch {
+      setError("Something went wrong — please try again.");
+      setBusy(false);
     }
-    router.push(next);
   }
 
   // Real OAuth when the provider is configured; otherwise a graceful demo
@@ -78,7 +109,7 @@ export default function AuthPage() {
             <Link href="/#how" className="hover:text-white">Docs</Link>
           </div>
           <button
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
             className="text-[13px] font-medium bg-white text-black rounded-full px-4 py-1.5 hover:bg-white/90"
           >
             {mode === "signin" ? "Get started" : "Sign in"}
@@ -95,7 +126,7 @@ export default function AuthPage() {
           <p className="text-white/85 text-[13px] text-center mt-4 mb-8 max-w-sm">
             {mode === "signin"
               ? "Sign in to open your whiteboards and blueprints."
-              : "Free forever with your own Gemini API key — no credit card, no subscription."}
+              : "Free plan included — 2 builds a week with full AI. No credit card."}
           </p>
 
           <form
@@ -150,16 +181,24 @@ export default function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              placeholder="Password"
+              required
+              minLength={6}
+              placeholder={mode === "signup" ? "Password (6+ characters)" : "Password"}
               className="w-full rounded-xl px-4 py-3 text-sm outline-none border focus:border-blue-500 transition-colors text-neutral-900"
               style={{ borderColor: "var(--hairline)" }}
             />
+            {error && (
+              <p className="text-[12px] text-red-600 text-center leading-snug">{error}</p>
+            )}
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl py-3 flex items-center justify-center gap-2"
+              disabled={busy}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl py-3 flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {mode === "signin" ? "Sign in" : "Create account"}
-              <Icon name="arrow-right" size={13} strokeWidth={2.2} />
+              {busy
+                ? mode === "signin" ? "Signing in…" : "Creating account…"
+                : mode === "signin" ? "Sign in" : "Create account"}
+              {!busy && <Icon name="arrow-right" size={13} strokeWidth={2.2} />}
             </button>
             <div className="flex items-center justify-between pt-1">
               <Image
@@ -171,7 +210,7 @@ export default function AuthPage() {
               />
               <button
                 type="button"
-                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
                 className="text-[12px] text-neutral-500 underline hover:text-black"
               >
                 {mode === "signin" ? "Create an account" : "Sign in instead"}

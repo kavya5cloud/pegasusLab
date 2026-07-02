@@ -1,12 +1,28 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
+import { getUserByEmail } from "@/lib/store";
+import { verifyPassword } from "@/lib/password";
 
-// Providers are added only when their credentials are present, so the app
-// boots cleanly before you've wired OAuth. Auth.js auto-reads the
-// AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET and AUTH_GITHUB_ID / AUTH_GITHUB_SECRET
-// env vars when the provider is constructed with no arguments.
-const providers: NextAuthConfig["providers"] = [];
+// Email + password accounts are always available; OAuth providers are added
+// only when their credentials are present, so the app boots cleanly before
+// you've wired OAuth. Auth.js auto-reads the AUTH_GOOGLE_ID /
+// AUTH_GOOGLE_SECRET and AUTH_GITHUB_ID / AUTH_GITHUB_SECRET env vars when
+// the provider is constructed with no arguments.
+const providers: NextAuthConfig["providers"] = [
+  Credentials({
+    credentials: { email: {}, password: {} },
+    async authorize(creds) {
+      const email = String(creds?.email ?? "").trim().toLowerCase();
+      const password = String(creds?.password ?? "");
+      if (!email || !password) return null;
+      const user = await getUserByEmail(email);
+      if (!user || !verifyPassword(password, user.passwordHash)) return null;
+      return { email: user.email, name: user.name };
+    },
+  }),
+];
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   providers.push(Google);
 }
@@ -14,9 +30,9 @@ if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
   providers.push(GitHub);
 }
 
-/** True when a signing secret and at least one OAuth provider are configured. */
+/** Auth is always configured — credentials accounts work out of the box. */
 export function isAuthConfigured(): boolean {
-  return !!process.env.AUTH_SECRET && providers.length > 0;
+  return true;
 }
 
 /** Which providers are available, for the sign-in UI. */

@@ -234,7 +234,7 @@ export default function PricingPage() {
 
         {/* Feature comparison */}
         <div className="mt-20">
-          <h2 className="serif text-3xl text-center mb-10">What's included</h2>
+          <h2 className="serif text-3xl text-center mb-10">What&apos;s included</h2>
           <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--hairline)" }}>
             {/* Column headers */}
             <div

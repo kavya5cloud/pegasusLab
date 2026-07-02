@@ -31,7 +31,7 @@ function buildSimulation(
   width: number,
   height: number
 ): SimNode[] {
-  return nodes.map((n, i) => ({
+  return nodes.map((n) => ({
     ...n,
     x: width / 2 + (Math.random() - 0.5) * width * 0.6,
     y: height / 2 + (Math.random() - 0.5) * height * 0.6,

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut as oauthSignOut } from "next-auth/react";
-import { getUser, hasAnyApiKey, signOut, type SessionUser } from "@/lib/auth";
+import { fetchUser, hasAnyApiKey, signOut, type SessionUser } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import type { GapSeverity, Project } from "@/lib/types";
 
@@ -105,6 +105,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showKeyBanner, setShowKeyBanner] = useState(false);
   const [limitHit, setLimitHit] = useState(false);
+  const [usedThisWeek, setUsedThisWeek] = useState(0);
   const promptRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -112,19 +113,26 @@ export default function Dashboard() {
   const load = useCallback(() => {
     fetch("/api/projects")
       .then((r) => r.json())
-      .then((data) => { setProjects(data); setLoading(false); })
+      .then((data: Project[]) => {
+        setProjects(data);
+        // Demo/sample showcase projects don't count against the allowance.
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        setUsedThisWeek(data.filter((p) => !p.demo && p.createdAt >= weekAgo).length);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) { router.replace("/auth?next=%2Fprojects"); return; }
-    setUser(u);
+    fetchUser().then((u) => {
+      if (!u) { router.replace("/auth?next=%2Fprojects"); return; }
+      setUser(u);
+      load();
+    });
     // Only show the key banner if the server has no AI key configured either
     fetch("/api/status").then(r => r.json()).then(d => {
       if (d.demo && !hasAnyApiKey()) setShowKeyBanner(true);
     }).catch(() => {});
-    load();
     const carried = new URLSearchParams(window.location.search).get("prompt");
     if (carried) { setPrompt(carried); setTimeout(() => promptRef.current?.focus(), 100); }
   }, [router, load]);
@@ -262,13 +270,11 @@ export default function Dashboard() {
 
   const activeLabel = STATS.find((s) => s.key === filter)?.label ?? "All builds";
 
-  // Count projects created in the last 7 days for the usage pill
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const usedThisWeek = projects.filter((p) => p.createdAt >= weekAgo).length;
   const remaining = Math.max(0, 2 - usedThisWeek);
 
-  /* ─── sidebar shared markup ─── */
-  function SidebarContent({ onNav }: { onNav?: () => void }) {
+  /* ─── sidebar shared markup (render helper, not a component — avoids
+         remounts and satisfies react-hooks/component-definition rules) ─── */
+  const renderSidebar = (onNav?: () => void) => {
     if (!user) return null;
     return (
       <div className="flex flex-col h-full">
@@ -377,7 +383,7 @@ export default function Dashboard() {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--paper)", color: "var(--ink)" }}>
@@ -387,7 +393,7 @@ export default function Dashboard() {
         className="hidden md:flex flex-col w-56 shrink-0 border-r h-full"
         style={{ borderColor: "var(--hairline)", background: "white" }}
       >
-        <SidebarContent />
+        {renderSidebar()}
       </aside>
 
       {/* ── Mobile sidebar overlay ── */}
@@ -402,7 +408,7 @@ export default function Dashboard() {
         className={`fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col border-r transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ borderColor: "var(--hairline)", background: "white" }}
       >
-        <SidebarContent onNav={() => setSidebarOpen(false)} />
+        {renderSidebar(() => setSidebarOpen(false))}
       </aside>
 
       {/* ── Main ── */}

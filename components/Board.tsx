@@ -284,7 +284,9 @@ function BoardInner({
 }) {
   const { screenToFlowPosition } = useReactFlow();
   const changeRef = useRef(onItemsChange);
-  changeRef.current = onItemsChange;
+  useEffect(() => {
+    changeRef.current = onItemsChange;
+  }, [onItemsChange]);
 
   const patchRef = useRef<(id: string, patch: Partial<BoardItem>) => void>(() => {});
   const deleteRef = useRef<(id: string) => void>(() => {});
@@ -315,16 +317,20 @@ function BoardInner({
     }))
   );
 
-  patchRef.current = (id, patch) => {
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, item: { ...n.data.item, ...patch } } } : n
-      )
-    );
-  };
-  deleteRef.current = (id) => {
-    setNodes((nds) => nds.filter((n) => n.id !== id));
-  };
+  // Assigned in an effect (not during render); only invoked from card event
+  // handlers, which always fire after mount.
+  useEffect(() => {
+    patchRef.current = (id, patch) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id ? { ...n, data: { ...n.data, item: { ...n.data.item, ...patch } } } : n
+        )
+      );
+    };
+    deleteRef.current = (id) => {
+      setNodes((nds) => nds.filter((n) => n.id !== id));
+    };
+  }, [setNodes]);
 
   // Propagate every change (position, content, add, remove) upward.
   useEffect(() => {

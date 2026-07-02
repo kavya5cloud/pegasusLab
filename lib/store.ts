@@ -115,5 +115,32 @@ export async function countProjectsThisWeek(owner: string = "demo"): Promise<num
   if (USE_DB) return db.countProjectsThisWeek(owner);
   const projects = await readAll();
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  return projects.filter((p) => ownsRecord(p, owner) && p.createdAt >= weekAgo).length;
+  // Demo/sample showcase projects don't count against the weekly allowance.
+  return projects.filter((p) => ownsRecord(p, owner) && !p.demo && p.createdAt >= weekAgo).length;
+}
+
+// ─── Users (credentials auth) ────────────────────────────────────────────────
+
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+
+async function readUsers(): Promise<db.UserRecord[]> {
+  try {
+    return JSON.parse(await fs.readFile(USERS_FILE, "utf8")) as db.UserRecord[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getUserByEmail(email: string): Promise<db.UserRecord | null> {
+  if (USE_DB) return db.getUserByEmail(email);
+  const users = await readUsers();
+  return users.find((u) => u.email === email) ?? null;
+}
+
+export async function createUser(user: db.UserRecord): Promise<void> {
+  if (USE_DB) return db.createUser(user);
+  const users = await readUsers();
+  users.push(user);
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 }

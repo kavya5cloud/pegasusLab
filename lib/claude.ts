@@ -60,12 +60,6 @@ export function getRoutingTable(): Record<TaskType, string> {
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY ?? "demo",
-});
-
-const gemini = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY ?? "demo" });
-
 function geminiModel(): string {
   return process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 }
@@ -780,7 +774,7 @@ async function* geminiTextStream(prompt: string, apiKey?: string): AsyncIterable
 }
 
 async function* anthropicTextStream(
-  stream: ReturnType<typeof anthropic.messages.stream>
+  stream: ReturnType<Anthropic["messages"]["stream"]>
 ): AsyncIterable<string> {
   for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
