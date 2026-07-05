@@ -3,7 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import type { Blueprint, Gap, Project, TaskType } from "./types";
+import type { Blueprint, Gap, Project, SitePlanFile, TaskType } from "./types";
 
 // ─── Backend selection ────────────────────────────────────────────────────────
 
@@ -339,6 +339,35 @@ HARD CONSTRAINTS — the file must run in a bare Vite + React sandbox with zero 
 - Build a focused, INTERACTIVE demo of the gap's solution — not the whole app. (Auth gap → a working sign-in form with validation + success states; pagination gap → a paginated table with sample rows and working page controls; billing gap → a pricing/checkout mock with selectable plans.)
 
 The component must render immediately and be visually impressive.`;
+
+const SITE_PLAN_SYSTEM = `You are the build planner inside Pegasus Lab. Given a Product Blueprint, produce the file manifest for a complete multi-page React website that implements it.
+
+The site runs in a FIXED Vite + React scaffold that already provides: package.json (react, react-dom, react-router-dom), vite config, index.html (with the Tailwind CDN loaded), and src/main.jsx (renders <App /> inside <BrowserRouter> and imports ./styles.css). You plan ONLY the src/ files.
+
+Output STRICT JSON, nothing else: {"files": [{"path": "...", "purpose": "..."}]}
+
+Rules:
+- 8 to 14 files, all under src/.
+- MUST include: "src/App.jsx" (defines the <Routes> for every page and shared layout), "src/components/Nav.jsx", "src/data/mock.js" (all mock data for the site), "src/styles.css".
+- One file per page under src/pages/ (e.g. "src/pages/Home.jsx") — derive the pages from the blueprint's page nodes and user flows. Always include a landing/home page.
+- Reusable UI under src/components/.
+- Use .jsx extension for all component files.
+- Each "purpose" is one specific sentence: what the file renders, its main sections, and which mock data it uses.`;
+
+const SITE_FILE_SYSTEM = `You are the code generator inside Pegasus Lab. You write ONE file of a multi-page React website. Other files are generated separately from the same manifest, so stay strictly consistent with it.
+
+HARD CONSTRAINTS — the file must run in a Vite + React sandbox with zero errors:
+- Output ONLY the raw file contents. No markdown fences, no prose.
+- Plain JavaScript + JSX. No TypeScript.
+- Imports allowed ONLY from: "react", "react-router-dom", or other files in the manifest via relative paths WITH extension (e.g. import Nav from "../components/Nav.jsx"; import { products } from "../data/mock.js").
+- Never import a file that is not in the manifest. Never import CSS (main.jsx already loads styles.css).
+- Components are default exports. Named exports only in src/data/mock.js.
+- src/App.jsx: import every page from the manifest, render the shared layout (Nav etc.) and a <Routes> block with a <Route> for each page. Do NOT render <BrowserRouter> — main.jsx already provides it.
+- Navigation uses <Link>/<NavLink> from react-router-dom, never <a href>.
+- Style with Tailwind utility classes (the CDN is loaded). Aim for a polished, modern, cohesive design: real spacing, hover states, a consistent accent color.
+- No fetch/network calls, no localStorage. All data comes from src/data/mock.js with realistic, domain-specific sample values.
+- For images use https://picsum.photos/seed/<word>/<w>/<h> URLs or pure CSS blocks.
+- Interactive where it matters: working forms with validation states, filters, tabs, modals — using React state only.`;
 
 const CHAT_SYSTEM = `You are Pegasus, the build intelligence inside pegasus lab. You orchestrate context — not just generate code.
 
@@ -699,6 +728,144 @@ export async function generatePreviewApp(
   }
 
   return stripCodeFences(raw);
+}
+
+// ─── Website generation (full multi-file site) ───────────────────────────────
+
+/** One-shot text completion across whichever backend is active. */
+async function completeText(
+  system: string,
+  user: string,
+  keys: OverrideKeys,
+  maxTokens = 8000
+): Promise<string> {
+  const backend = resolveBackend(keys);
+  const ollamaOpts: OllamaOpts = { url: keys.ollamaUrl, model: keys.ollamaModel };
+
+  if (backend === "anthropic") {
+    const res = await anthropicClient(keys.anthropic).messages.create({
+      model: routeModel("codegen"),
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: user }],
+    });
+    return res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
+  }
+  if (backend === "gemini") {
+    const res = await geminiClient(keys.google).models.generateContent({
+      model: geminiModel(),
+      contents: `${system}\n\n${user}`,
+    });
+    return res.text ?? "";
+  }
+  const res = await openaiClient(ollamaOpts).chat.completions.create({
+    model: openaiModel(ollamaOpts),
+    max_tokens: maxTokens,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  });
+  return res.choices[0]?.message?.content ?? "";
+}
+
+/** Compact blueprint context shared by the plan and per-file calls. */
+function siteContext(project: Project): string {
+  const bp = project.blueprint;
+  return JSON.stringify(
+    {
+      appName: project.name,
+      description: project.description,
+      prd: bp?.prd,
+      userFlows: bp?.userFlows,
+      pagesAndComponents: bp?.nodes
+        .filter((n) => n.type === "page" || n.type === "component")
+        .map((n) => ({ label: n.label, type: n.type, description: n.description })),
+      dataEntities: bp?.databaseSchema?.entities?.map((e) => ({
+        name: e.name,
+        fields: e.fields.map((f) => f.name),
+      })),
+      designSystem: bp?.frontendArchitecture?.designSystem,
+    },
+    null,
+    1
+  );
+}
+
+const SitePlanSchema = z.object({
+  files: z
+    .array(z.object({ path: z.string(), purpose: z.string() }))
+    .min(4)
+    .max(20),
+});
+
+export async function generateSitePlan(
+  project: Project,
+  keys: OverrideKeys = {}
+): Promise<SitePlanFile[]> {
+  const raw = await completeText(
+    SITE_PLAN_SYSTEM,
+    `# Product Blueprint\n${siteContext(project)}\n\nProduce the file manifest JSON now.`,
+    keys,
+    4000
+  );
+  const parsed = SitePlanSchema.parse(JSON.parse(stripCodeFences(raw)));
+  // Normalise: everything under src/, required files present.
+  const files = parsed.files
+    .map((f) => ({ ...f, path: f.path.replace(/^\.?\//, "") }))
+    .filter((f) => f.path.startsWith("src/"));
+  const ensure = (path: string, purpose: string) => {
+    if (!files.some((f) => f.path === path)) files.push({ path, purpose });
+  };
+  ensure("src/App.jsx", "Shared layout and the <Routes> block routing every page.");
+  ensure("src/components/Nav.jsx", "Top navigation with links to every page.");
+  ensure("src/data/mock.js", "Named exports with realistic mock data for the whole site.");
+  ensure("src/styles.css", "Global styles that complement Tailwind utilities.");
+  return files;
+}
+
+export async function generateSiteFile(
+  project: Project,
+  plan: SitePlanFile[],
+  file: SitePlanFile,
+  keys: OverrideKeys = {}
+): Promise<string> {
+  const manifest = plan.map((f) => `- ${f.path}: ${f.purpose}`).join("\n");
+  const user = [
+    `# Product Blueprint\n${siteContext(project)}`,
+    `# Site manifest (the only files that exist)\n${manifest}`,
+    `# Your file\nWrite the complete contents of ${file.path}.\nPurpose: ${file.purpose}`,
+  ].join("\n\n");
+
+  let code = stripCodeFences(await completeText(SITE_FILE_SYSTEM, user, keys, 8000));
+
+  // Validate; one retry with the problem fed back.
+  const problem = validateSiteFile(file.path, code);
+  if (problem) {
+    code = stripCodeFences(
+      await completeText(
+        SITE_FILE_SYSTEM,
+        `${user}\n\n# Your previous attempt was rejected\nProblem: ${problem}\nRewrite ${file.path} fixing this. Output only the file contents.`,
+        keys,
+        8000
+      )
+    );
+  }
+  return code;
+}
+
+function validateSiteFile(path: string, code: string): string | null {
+  if (!code.trim()) return "The file was empty.";
+  if (path.endsWith(".jsx") && !code.includes("export default")) {
+    return "Component files must have a default export.";
+  }
+  if (path === "src/App.jsx" && code.includes("<BrowserRouter")) {
+    return "App.jsx must not render <BrowserRouter> — main.jsx already provides it.";
+  }
+  if (/from\s+["'](?!react|react-dom|react-router-dom|\.{1,2}\/)/.test(code)) {
+    return "Imports are only allowed from react, react-router-dom, or relative manifest files.";
+  }
+  return null;
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────

@@ -297,6 +297,26 @@ export interface GeneratedArtifact {
   createdAt: string;
 }
 
+// ─── Generated website ────────────────────────────────────────────────────────
+
+export interface SitePlanFile {
+  /** Path relative to the project root, e.g. "src/pages/Home.jsx" */
+  path: string;
+  /** One-line spec of what this file contains */
+  purpose: string;
+}
+
+export interface SiteFile {
+  path: string;
+  code: string;
+}
+
+export interface GeneratedSite {
+  plan: SitePlanFile[];
+  files: SiteFile[];
+  generatedAt: string;
+}
+
 // ─── Project ──────────────────────────────────────────────────────────────────
 
 export interface Project {
@@ -306,6 +326,7 @@ export interface Project {
   items: BoardItem[];
   blueprint: Blueprint | null;
   generated?: GeneratedArtifact[];
+  site?: GeneratedSite;
   demo?: boolean;
   owner?: string;
   shareId?: string;

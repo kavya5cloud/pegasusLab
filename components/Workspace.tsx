@@ -12,6 +12,7 @@ import ChatPanel from "./ChatPanel";
 import ArtifactsPanel from "./ArtifactsPanel";
 import ContextGraphPanel from "./ContextGraphPanel";
 import LivePreview from "./LivePreview";
+import SiteBuilder from "./SiteBuilder";
 import { useToast } from "./Toast";
 import Image from "next/image";
 import { Icon } from "./icons";
@@ -263,6 +264,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
   const [artifactsOpen, setArtifactsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [previewGap, setPreviewGap] = useState<Gap | null>(null);
+  const [siteOpen, setSiteOpen] = useState(false);
   const { toast } = useToast();
   const [codeTitle, setCodeTitle] = useState("");
   const [codeContent, setCodeContent] = useState("");
@@ -297,6 +299,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
       const mod = e.metaKey || e.ctrlKey;
       if (e.key === "Escape") {
         if (shortcutsOpen) { setShortcutsOpen(false); return; }
+        if (siteOpen) { setSiteOpen(false); return; }
         if (previewGap) { setPreviewGap(null); return; }
         if (codeOpen) { abortRef.current?.abort(); setCodeOpen(false); return; }
         if (chatOpen) { setChatOpen(false); return; }
@@ -312,7 +315,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [codeOpen, chatOpen, shipOpen, buildModalOpen, artifactsOpen, shortcutsOpen, previewGap, analyzing, project]);
+  }, [codeOpen, chatOpen, shipOpen, buildModalOpen, artifactsOpen, shortcutsOpen, previewGap, siteOpen, analyzing, project]);
 
   const persistItems = useCallback(
     (items: BoardItem[]) => {
@@ -563,6 +566,17 @@ export default function Workspace({ projectId }: { projectId: string }) {
                 Ship
               </button>
             </>
+          )}
+          {bp && (
+            <button
+              onClick={() => setSiteOpen(true)}
+              className="text-xs font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5"
+              style={{ background: "#111111", color: "#ffffff" }}
+              title="Generate and run the full website from the blueprint"
+            >
+              <Icon name="bolt" size={11} strokeWidth={2} />
+              {project.site ? "Open website" : "Build website"}
+            </button>
           )}
           <button
             onClick={() => setBuildModalOpen(true)}
@@ -1063,6 +1077,14 @@ export default function Workspace({ projectId }: { projectId: string }) {
             abortRef.current?.abort();
             setCodeOpen(false);
           }}
+        />
+      )}
+
+      {siteOpen && (
+        <SiteBuilder
+          project={project}
+          onClose={() => setSiteOpen(false)}
+          onSiteSaved={(site) => setProject((p) => (p ? { ...p, site } : p))}
         />
       )}
 

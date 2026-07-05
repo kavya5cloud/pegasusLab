@@ -30,6 +30,7 @@ function ensureSchema(): Promise<void> {
           items       JSONB NOT NULL DEFAULT '[]'::jsonb,
           blueprint   JSONB,
           generated   JSONB,
+          site        JSONB,
           demo        BOOLEAN NOT NULL DEFAULT false,
           share_id    TEXT,
           created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -40,6 +41,7 @@ function ensureSchema(): Promise<void> {
       await sql`CREATE UNIQUE INDEX IF NOT EXISTS projects_share_id_idx ON projects (share_id) WHERE share_id IS NOT NULL`;
       // Migration for existing tables
       await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS share_id TEXT`;
+      await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS site JSONB`;
       await sql`
         CREATE TABLE IF NOT EXISTS users (
           email         TEXT PRIMARY KEY,
@@ -62,6 +64,7 @@ function rowToProject(r: any): Project {
     items: r.items ?? [],
     blueprint: r.blueprint ?? null,
     generated: r.generated ?? undefined,
+    site: r.site ?? undefined,
     demo: r.demo ?? undefined,
     owner: r.owner,
     shareId: r.share_id ?? undefined,
@@ -121,6 +124,7 @@ export async function updateProject(
       items       = ${JSON.stringify(next.items)}::jsonb,
       blueprint   = ${next.blueprint ? JSON.stringify(next.blueprint) : null}::jsonb,
       generated   = ${next.generated ? JSON.stringify(next.generated) : null}::jsonb,
+      site        = ${next.site ? JSON.stringify(next.site) : null}::jsonb,
       demo        = ${next.demo ?? false},
       share_id    = ${next.shareId ?? null},
       updated_at  = now()
