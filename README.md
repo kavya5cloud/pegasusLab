@@ -87,7 +87,7 @@ Pegasus generates understanding.
 
 ---
 
-# 🏛 Core Principles
+#  Core Principles
 
 - Context before code
 - Architecture before implementation
@@ -97,7 +97,7 @@ Pegasus generates understanding.
 
 ---
 
-# 💡 Vision
+#  Vision
 
 We believe software shouldn't begin with code.
 
@@ -120,7 +120,7 @@ Pegasus Lab is building a future where AI understands products as deeply as engi
 
 ---
 
-# 🛠 Tech Stack
+#  Tech Stack
 
 Frontend
 
@@ -153,7 +153,7 @@ Infrastructure
 
 ---
 
-# 🤝 Contributing
+#  Contributing
 
 We welcome contributions from developers, designers, researchers, and AI enthusiasts.
 
