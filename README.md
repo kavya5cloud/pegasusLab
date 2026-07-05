@@ -10,9 +10,7 @@ Build production-ready software with AI-powered planning, blueprint generation, 
 
 ---
 
-![GitHub stars](https://img.shields.io/github/stars/pegasus-lab/pegasus?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-![AI Powered](https://img.shields.io/badge/AI-Powered-6C63FF?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Beta-success?style=for-the-badge)
 
 </div>
