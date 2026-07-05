@@ -4,16 +4,27 @@ import { useState } from "react";
 import { Icon } from "./icons";
 import type { Project } from "@/lib/types";
 
+type ShipWhat = "site" | "artifacts";
+
 export default function ShipPanel({
   project,
   onClose,
   onShipped,
+  initialMode,
 }: {
   project: Project;
   onClose: () => void;
   onShipped?: () => void;
+  initialMode?: ShipWhat;
 }) {
   const artifacts = project.generated ?? [];
+  const siteFiles = project.site?.files ?? [];
+  const hasSite = siteFiles.length > 0;
+  const hasArtifacts = artifacts.length > 0;
+
+  const [what, setWhat] = useState<ShipWhat>(
+    initialMode ?? (hasSite ? "site" : "artifacts")
+  );
   const [repo, setRepo] = useState(
     project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
   );
@@ -22,6 +33,8 @@ export default function ShipPanel({
   const [result, setResult] = useState<{ url: string; files: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const shippable = what === "site" ? hasSite : hasArtifacts;
+
   async function ship() {
     setShipping(true);
     setError(null);
@@ -29,7 +42,7 @@ export default function ShipPanel({
       const res = await fetch(`/api/projects/${project.id}/ship`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo, token: token || undefined }),
+        body: JSON.stringify({ repo, token: token || undefined, what }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Ship failed");
@@ -56,7 +69,7 @@ export default function ShipPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(20,20,20,0.4)" }}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ background: "rgba(20,20,20,0.4)" }}>
       <div
         className="w-full max-w-md bg-white rounded-2xl shadow-2xl border overflow-hidden"
         style={{ borderColor: "var(--hairline)", color: "var(--ink)" }}
@@ -91,29 +104,70 @@ export default function ShipPanel({
               >
                 {result.url}
               </a>
+              {what === "site" && (
+                <p className="text-[11px] mt-3" style={{ color: "var(--ink-muted)" }}>
+                  Deploy it: import this repo at vercel.com/new — it&apos;s a standard Vite app.
+                </p>
+              )}
             </div>
           ) : (
             <>
+              {/* What to ship */}
+              {hasSite && hasArtifacts && (
+                <div
+                  className="flex rounded-xl p-0.5 text-[12px] font-medium"
+                  style={{ background: "var(--paper)", border: "1px solid var(--hairline)" }}
+                >
+                  {(["site", "artifacts"] as ShipWhat[]).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => setWhat(w)}
+                      className="flex-1 rounded-[10px] py-1.5 transition-colors"
+                      style={{
+                        background: what === w ? "#111" : "transparent",
+                        color: what === w ? "#fff" : "var(--ink-muted)",
+                      }}
+                    >
+                      {w === "site" ? "Website" : "Gap artifacts"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-muted)" }}>
-                Pushes everything Pegasus generated for {project.name} — plus a
-                PEGASUS.md build manifest — to a GitHub repository.
+                {what === "site"
+                  ? `Pushes the complete generated website for ${project.name} — a runnable Vite + React repo with README — to GitHub. Import it on Vercel to deploy.`
+                  : `Pushes everything Pegasus generated for ${project.name} — plus a PEGASUS.md build manifest — to a GitHub repository.`}
               </p>
 
               <div
                 className="rounded-xl border px-3 py-2 max-h-28 overflow-auto"
                 style={{ borderColor: "var(--hairline)" }}
               >
-                {artifacts.length === 0 ? (
-                  <p className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
-                    Nothing generated yet — close a gap first, then ship.
-                  </p>
-                ) : (
+                {what === "site" ? (
+                  hasSite ? (
+                    siteFiles.map((f) => (
+                      <div key={f.path} className="flex items-center gap-2 py-0.5">
+                        <Icon name="code" size={10} strokeWidth={2} style={{ color: "var(--ink-muted)" }} />
+                        <span className="text-[11px] font-mono truncate">{f.path}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
+                      No website yet — click Build website first.
+                    </p>
+                  )
+                ) : hasArtifacts ? (
                   artifacts.map((a) => (
                     <div key={a.id} className="flex items-center gap-2 py-0.5">
                       <Icon name="code" size={10} strokeWidth={2} style={{ color: "var(--ink-muted)" }} />
                       <span className="text-[11px] truncate">{a.title}</span>
                     </div>
                   ))
+                ) : (
+                  <p className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
+                    Nothing generated yet — close a gap first, then ship.
+                  </p>
                 )}
               </div>
 
@@ -142,21 +196,23 @@ export default function ShipPanel({
               <div className="flex items-center gap-2">
                 <button
                   onClick={ship}
-                  disabled={shipping || artifacts.length === 0 || !repo.trim()}
+                  disabled={shipping || !shippable || !repo.trim()}
                   className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-[13px] font-medium rounded-xl py-2.5 disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {shipping ? "Shipping..." : "Push to GitHub"}
                   {!shipping && <Icon name="arrow-right" size={12} strokeWidth={2.2} />}
                 </button>
-                <button
-                  onClick={downloadBundle}
-                  disabled={artifacts.length === 0}
-                  className="text-[13px] font-medium rounded-xl py-2.5 px-4 border disabled:opacity-40"
-                  style={{ borderColor: "var(--hairline)", color: "var(--ink)" }}
-                  title="Download everything as a markdown bundle"
-                >
-                  Download
-                </button>
+                {what === "artifacts" && (
+                  <button
+                    onClick={downloadBundle}
+                    disabled={!hasArtifacts}
+                    className="text-[13px] font-medium rounded-xl py-2.5 px-4 border disabled:opacity-40"
+                    style={{ borderColor: "var(--hairline)", color: "var(--ink)" }}
+                    title="Download everything as a markdown bundle"
+                  >
+                    Download
+                  </button>
+                )}
               </div>
             </>
           )}

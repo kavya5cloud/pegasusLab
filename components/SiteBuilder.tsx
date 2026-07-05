@@ -5,6 +5,7 @@ import { getContainer } from "@/lib/webcontainer";
 import { siteStaticFiles, siteTree } from "@/lib/site-scaffold";
 import { userApiHeaders } from "@/lib/auth";
 import { Icon } from "./icons";
+import ShipPanel from "./ShipPanel";
 import type { GeneratedSite, Project, SiteFile, SitePlanFile } from "@/lib/types";
 
 type Phase =
@@ -46,6 +47,7 @@ export default function SiteBuilder({
   const [logs, setLogs] = useState<string[]>([]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [rebuildNonce, setRebuildNonce] = useState(0);
+  const [shipOpen, setShipOpen] = useState(false);
 
   const cancelled = useRef(false);
   const devProcRef = useRef<{ kill: () => void } | null>(null);
@@ -109,13 +111,14 @@ export default function SiteBuilder({
             setStatuses((s) => ({ ...s, [file.path]: "done" }));
           }
 
-          // 3. Persist so reopening skips generation
+          // 3. Persist so reopening skips generation (awaited so an immediate
+          // "Push to GitHub" reads the saved site server-side)
           const site: GeneratedSite = {
             plan: sitePlan,
             files: siteFiles,
             generatedAt: new Date().toISOString(),
           };
-          fetch(`/api/projects/${project.id}`, {
+          await fetch(`/api/projects/${project.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ site }),
@@ -206,6 +209,17 @@ export default function SiteBuilder({
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {files.length > 0 && !busy && (
+            <button
+              onClick={() => setShipOpen(true)}
+              className="text-xs font-medium px-2.5 py-1 rounded flex items-center gap-1.5"
+              style={{ background: "#111111", color: "#ffffff" }}
+              title="Push the generated website to a GitHub repository"
+            >
+              <Icon name="github" size={10} strokeWidth={2} />
+              Push to GitHub
+            </button>
+          )}
           {files.length > 0 && (
             <button
               onClick={downloadZip}
@@ -358,6 +372,19 @@ export default function SiteBuilder({
             <div key={i} className="whitespace-pre-wrap">{l}</div>
           ))}
         </div>
+      )}
+
+      {shipOpen && (
+        <ShipPanel
+          // Merge the freshly generated files in case the parent's project
+          // state hasn't re-propagated yet.
+          project={{
+            ...project,
+            site: project.site ?? { plan, files, generatedAt: new Date().toISOString() },
+          }}
+          initialMode="site"
+          onClose={() => setShipOpen(false)}
+        />
       )}
     </div>
   );

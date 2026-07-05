@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { artifactsToFiles } from "@/lib/ship";
+import { artifactsToFiles, siteToFiles } from "@/lib/ship";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
 
@@ -44,9 +44,21 @@ export async function POST(
     return NextResponse.json({ error: "Repository name is required." }, { status: 400 });
   }
 
-  const files = artifactsToFiles(project, project.blueprint, project.generated ?? []);
+  const what: "site" | "artifacts" = body.what === "site" ? "site" : "artifacts";
+  const files =
+    what === "site"
+      ? siteToFiles(project)
+      : artifactsToFiles(project, project.blueprint, project.generated ?? []);
   if (files.length === 0) {
-    return NextResponse.json({ error: "Nothing to ship yet — generate some code first." }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          what === "site"
+            ? "No generated website yet — build the website first."
+            : "Nothing to ship yet — generate some code first.",
+      },
+      { status: 400 }
+    );
   }
 
   try {

@@ -1,8 +1,44 @@
 import type { Blueprint, GeneratedArtifact, Project } from "./types";
+import { siteStaticFiles } from "./site-scaffold";
 
 export interface ShipFile {
   path: string;
   content: string;
+}
+
+/**
+ * The generated website as a complete, runnable repository: fixed scaffold
+ * (package.json, vite config, index.html, main.jsx, README) plus every
+ * AI-generated src/ file, and a PEGASUS.md manifest.
+ */
+export function siteToFiles(project: Project): ShipFile[] {
+  const site = project.site;
+  if (!site || site.files.length === 0) return [];
+
+  const files = new Map<string, string>();
+  for (const f of [...siteStaticFiles(project.name), ...site.files]) {
+    files.set(f.path, f.code);
+  }
+
+  files.set(
+    "PEGASUS.md",
+    [
+      `# ${project.name}`,
+      "",
+      project.description,
+      "",
+      project.blueprint ? `## Blueprint summary\n\n${project.blueprint.summary}` : "",
+      `## Site files\n\n${site.plan.map((p) => `- \`${p.path}\` — ${p.purpose}`).join("\n")}`,
+      "",
+      `Generated ${site.generatedAt}.`,
+      "",
+      "_Built with pegasus lab. — whiteboard in, working app out._",
+    ]
+      .filter(Boolean)
+      .join("\n")
+  );
+
+  return [...files.entries()].map(([path, content]) => ({ path, content }));
 }
 
 /**
