@@ -6,6 +6,9 @@ export async function GET() {
   return NextResponse.json({
     demo: isDemoMode(),
     backend: getBackendLabel(),
+    fallback: process.env.GROQ_API_KEY
+      ? `Groq (${process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"})`
+      : null,
     auth: availableProviders(),
     db: !!process.env.DATABASE_URL,
   });
