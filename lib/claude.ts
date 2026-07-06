@@ -109,8 +109,13 @@ function openaiClient(ollama?: OllamaOpts): OpenAI {
 
 function openaiModel(ollama?: OllamaOpts): string {
   if (ollama?.model) return ollama.model;
-  if (process.env.GROQ_API_KEY) return process.env.GROQ_MODEL ?? "llama-3.1-70b-versatile";
+  if (process.env.GROQ_API_KEY) return process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
   return process.env.OLLAMA_MODEL ?? "llama3.1";
+}
+
+/** True when a second free pool exists to absorb rate-limited requests. */
+function hasGroqFallback(backend: Backend): boolean {
+  return backend !== "groq" && !!process.env.GROQ_API_KEY;
 }
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
@@ -466,9 +471,18 @@ export async function generateBlueprint(
   keys: OverrideKeys = {}
 ): Promise<Blueprint> {
   const backend = resolveBackend(keys);
-  if (backend === "anthropic") return generateBlueprintAnthropic(project, githubContext, keys.anthropic);
-  if (backend === "gemini") return generateBlueprintGemini(project, githubContext, keys.google);
-  return generateBlueprintOpenAI(project, githubContext, { url: keys.ollamaUrl, model: keys.ollamaModel });
+  try {
+    if (backend === "anthropic") return await generateBlueprintAnthropic(project, githubContext, keys.anthropic);
+    if (backend === "gemini") return await generateBlueprintGemini(project, githubContext, keys.google);
+    return await generateBlueprintOpenAI(project, githubContext, { url: keys.ollamaUrl, model: keys.ollamaModel });
+  } catch (err) {
+    // Rate limited with a Groq free pool configured → generate there instead.
+    if (isRateLimit(err) && hasGroqFallback(backend)) {
+      console.warn("[ai] blueprint rate limited — failing over to Groq");
+      return generateBlueprintOpenAI(project, githubContext);
+    }
+    throw err;
+  }
 }
 
 function anthropicClient(apiKey?: string) {
@@ -681,7 +695,12 @@ export function streamGapCode(project: Project, gap: Gap, keys: OverrideKeys = {
   }
 
   if (backend === "gemini") {
-    return geminiTextStream(`${CODEGEN_SYSTEM}\n\n${userMessage}`, keys.google);
+    return streamWithFallback(
+      geminiTextStream(`${CODEGEN_SYSTEM}\n\n${userMessage}`, keys.google),
+      hasGroqFallback(backend)
+        ? () => groqStream(CODEGEN_SYSTEM, [{ role: "user", content: userMessage }], 16000)
+        : null
+    );
   }
 
   return openaiTextStream(
@@ -737,9 +756,10 @@ export async function generatePreviewApp(
 
 /**
  * One-shot text completion across whichever backend is active.
- * Retries once on provider rate limits, honouring the suggested delay —
- * free-tier per-minute quotas routinely trip mid-way through multi-call
- * flows like the website builder.
+ * On a provider rate limit: fail over to the Groq free pool immediately when
+ * it's configured (a second, independent quota), otherwise wait out the
+ * suggested delay and retry once — free-tier per-minute quotas routinely
+ * trip mid-way through multi-call flows like the website builder.
  */
 async function completeText(
   system: string,
@@ -751,9 +771,78 @@ async function completeText(
     return await completeTextOnce(system, user, keys, maxTokens);
   } catch (err) {
     if (!isRateLimit(err)) throw err;
+    if (hasGroqFallback(resolveBackend(keys))) {
+      console.warn("[ai] rate limited — failing over to Groq");
+      return completeTextGroq(system, user, maxTokens);
+    }
     await new Promise((r) => setTimeout(r, retryDelayMs(err)));
     return completeTextOnce(system, user, keys, maxTokens);
   }
+}
+
+/**
+ * Wrap a stream so a rate limit on the first token fails over to a fallback
+ * stream (Groq) instead of erroring the response.
+ */
+async function* streamWithFallback(
+  primary: AsyncIterable<string>,
+  fallback: (() => AsyncIterable<string>) | null
+): AsyncIterable<string> {
+  const it = primary[Symbol.asyncIterator]();
+  let first: IteratorResult<string>;
+  try {
+    first = await it.next();
+  } catch (err) {
+    if (isRateLimit(err) && fallback) {
+      console.warn("[ai] stream rate limited — failing over to Groq");
+      yield* fallback();
+      return;
+    }
+    throw err;
+  }
+  if (first.done) return;
+  yield first.value;
+  while (true) {
+    const next = await it.next();
+    if (next.done) return;
+    yield next.value;
+  }
+}
+
+function groqStream(system: string, messages: ChatTurn[], maxTokens: number): AsyncIterable<string> {
+  const client = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+  return openaiTextStream(
+    client.chat.completions.stream({
+      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [{ role: "system", content: system }, ...messages],
+    })
+  );
+}
+
+/** Direct Groq completion, bypassing backend resolution (fallback path). */
+async function completeTextGroq(
+  system: string,
+  user: string,
+  maxTokens = 8000
+): Promise<string> {
+  const client = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+  const res = await client.chat.completions.create({
+    model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+    max_tokens: maxTokens,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  });
+  return res.choices[0]?.message?.content ?? "";
 }
 
 async function completeTextOnce(
@@ -937,7 +1026,10 @@ export function streamChat(project: Project, messages: ChatTurn[], keys: Overrid
 
   if (backend === "gemini") {
     const fullPrompt = `${systemWithContext}\n\n${messages.map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n\n")}`;
-    return geminiTextStream(fullPrompt, keys.google);
+    return streamWithFallback(
+      geminiTextStream(fullPrompt, keys.google),
+      hasGroqFallback(backend) ? () => groqStream(systemWithContext, messages, 8000) : null
+    );
   }
 
   return openaiTextStream(
