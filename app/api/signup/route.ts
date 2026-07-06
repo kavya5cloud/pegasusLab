@@ -15,14 +15,21 @@ export async function POST(req: Request) {
   if (password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
-  if (await getUserByEmail(email)) {
+  try {
+    if (await getUserByEmail(email)) {
+      return NextResponse.json(
+        { error: "An account with this email already exists — sign in instead." },
+        { status: 409 }
+      );
+    }
+    await createUser({ email, name, passwordHash: hashPassword(password) });
+  } catch (err) {
+    console.error("[signup] storage failed:", err);
     return NextResponse.json(
-      { error: "An account with this email already exists — sign in instead." },
-      { status: 409 }
+      { error: "Account storage is unreachable — check DATABASE_URL on the server." },
+      { status: 503 }
     );
   }
-
-  await createUser({ email, name, passwordHash: hashPassword(password) });
 
   if (process.env.RESEND_API_KEY) {
     // Fire-and-forget — signup must not fail because email did.

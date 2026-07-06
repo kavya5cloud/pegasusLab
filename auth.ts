@@ -17,7 +17,15 @@ const providers: NextAuthConfig["providers"] = [
       const email = String(creds?.email ?? "").trim().toLowerCase();
       const password = String(creds?.password ?? "");
       if (!email || !password) return null;
-      const user = await getUserByEmail(email);
+      let user;
+      try {
+        user = await getUserByEmail(email);
+      } catch (err) {
+        // A storage failure (bad DATABASE_URL, Neon outage) must read as a
+        // failed sign-in, not an Auth.js "server configuration" error page.
+        console.error("[auth] user lookup failed:", err);
+        return null;
+      }
       if (!user || !verifyPassword(password, user.passwordHash)) return null;
       return { email: user.email, name: user.name };
     },
