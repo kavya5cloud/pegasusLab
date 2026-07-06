@@ -199,7 +199,18 @@ export default function AuthPage() {
               style={{ borderColor: "var(--hairline)" }}
             />
             {error && (
-              <p className="text-[12px] text-red-600 text-center leading-snug">{error}</p>
+              <div className="text-center space-y-1.5">
+                <p className="text-[12px] text-red-600 leading-snug">{error}</p>
+                {mode === "signin" && /no account|Wrong email/i.test(error) && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode("signup"); setError(null); }}
+                    className="text-[12px] font-medium text-blue-600 underline"
+                  >
+                    New here? Create an account with this email
+                  </button>
+                )}
+              </div>
             )}
             <button
               type="submit"

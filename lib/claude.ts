@@ -61,8 +61,12 @@ export function getRoutingTable(): Record<TaskType, string> {
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 function geminiModel(): string {
-  // gemini-2.0-flash no longer has free-tier quota (limit 0); 2.5-flash does.
-  return process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const m = process.env.GEMINI_MODEL;
+  // gemini-2.0-flash free tier was retired (429 with limit:0 on every
+  // metric). Never use it, even when the env still says so — a stale env
+  // var must not be able to kill the whole Gemini pool.
+  if (!m || m === "gemini-2.0-flash") return "gemini-2.5-flash";
+  return m;
 }
 
 // ─── Rate-limit handling ─────────────────────────────────────────────────────
@@ -72,12 +76,15 @@ function isRateLimit(err: unknown): boolean {
   return s.includes("RESOURCE_EXHAUSTED") || s.includes("429") || /quota/i.test(s);
 }
 
-/** Parse Google's suggested retry delay (e.g. "39.7s") from a 429 payload. */
+/** Parse the provider's suggested retry delay (e.g. "39.7s") from a 429. */
 function retryDelayMs(err: unknown): number {
   const s = err instanceof Error ? err.message : String(err);
   const m = s.match(/retry(?:Delay)?[^0-9]*([0-9.]+)s/i);
-  const secs = m ? Math.ceil(parseFloat(m[1])) : 20;
-  return Math.min(secs, 50) * 1000; // stay inside serverless maxDuration
+  const secs = m ? Math.ceil(parseFloat(m[1])) : 15;
+  // Short cap: long sleeps risk the serverless function limit killing the
+  // request mid-wait. Longer pacing belongs on the client (it has a visible
+  // countdown and no timeout).
+  return Math.min(secs, 20) * 1000;
 }
 
 /** Turn provider errors into something a user can act on. */
@@ -773,17 +780,9 @@ async function completeText(
     if (!isRateLimit(err)) throw err;
     if (hasGroqFallback(resolveBackend(keys))) {
       console.warn("[ai] rate limited — failing over to Groq");
-      try {
-        return await completeTextGroq(system, user, maxTokens);
-      } catch (groqErr) {
-        // Both pools limited: wait out the shorter suggested delay, then
-        // try Groq once more (per-minute windows reset quickly).
-        if (!isRateLimit(groqErr)) throw groqErr;
-        const wait = Math.min(retryDelayMs(err), retryDelayMs(groqErr), 45_000);
-        console.warn(`[ai] both pools limited — waiting ${wait}ms`);
-        await new Promise((r) => setTimeout(r, wait));
-        return completeTextGroq(system, user, maxTokens);
-      }
+      // If Groq is also limited, throw: the client paces long retries with
+      // a visible countdown; sleeping here risks the function time limit.
+      return completeTextGroq(system, user, maxTokens);
     }
     await new Promise((r) => setTimeout(r, retryDelayMs(err)));
     return completeTextOnce(system, user, keys, maxTokens);
@@ -946,6 +945,26 @@ export async function generateSitePlan(
   return files;
 }
 
+/**
+ * Slim context for per-file calls — the manifest is the real contract, so a
+ * compact brief keeps every call well under free-tier per-minute token
+ * limits (the full blueprint context is only needed for planning).
+ */
+function siteContextSlim(project: Project): string {
+  const bp = project.blueprint;
+  return JSON.stringify(
+    {
+      appName: project.name,
+      description: project.description,
+      vision: bp?.prd?.vision,
+      dataEntities: bp?.databaseSchema?.entities?.map((e) => e.name),
+      designSystem: bp?.frontendArchitecture?.designSystem,
+    },
+    null,
+    1
+  );
+}
+
 export async function generateSiteFile(
   project: Project,
   plan: SitePlanFile[],
@@ -954,7 +973,7 @@ export async function generateSiteFile(
 ): Promise<string> {
   const manifest = plan.map((f) => `- ${f.path}: ${f.purpose}`).join("\n");
   const user = [
-    `# Product Blueprint\n${siteContext(project)}`,
+    `# App\n${siteContextSlim(project)}`,
     `# Site manifest (the only files that exist)\n${manifest}`,
     `# Your file\nWrite the complete contents of ${file.path}.\nPurpose: ${file.purpose}`,
   ].join("\n\n");
