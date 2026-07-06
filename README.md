@@ -6,7 +6,7 @@
 
 Build production-ready software with AI-powered planning, blueprint generation, validation, and intelligent engineering.
 
-[Website](https://pegasuslab.in) • [Documentation](#) • [Discord](#) • [Roadmap](#)
+[Website](https://pegasuslab.in) • [Documentation](docs/README.md) • [Discord](#) • [Roadmap](#)
 
 ---
 
