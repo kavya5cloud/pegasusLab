@@ -24,8 +24,8 @@ export function isDemoMode(): boolean {
 export function getBackendLabel(): string {
   const b = getBackend();
   if (b === "anthropic") return `Anthropic`;
-  if (b === "gemini") return `Google Gemini (${process.env.GEMINI_MODEL ?? "gemini-2.0-flash"})`;
-  if (b === "groq") return `Groq (${process.env.GROQ_MODEL ?? "llama-3.1-70b-versatile"})`;
+  if (b === "gemini") return `Google Gemini (${geminiModel()})`;
+  if (b === "groq") return `Groq (${process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"})`;
   if (b === "ollama") return `Ollama (${process.env.OLLAMA_MODEL ?? "llama3.1"})`;
   return "demo";
 }
