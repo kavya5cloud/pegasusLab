@@ -48,6 +48,7 @@ export default function SiteBuilder({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [rebuildNonce, setRebuildNonce] = useState(0);
   const [shipOpen, setShipOpen] = useState(false);
+  const [waitingSecs, setWaitingSecs] = useState(0);
 
   const cancelled = useRef(false);
   const devProcRef = useRef<{ kill: () => void } | null>(null);
@@ -93,20 +94,38 @@ export default function SiteBuilder({
           setPlan(sitePlan);
           setStatuses(Object.fromEntries(sitePlan.map((f) => [f.path, "pending" as FileStatus])));
 
-          // 2. Generate file by file
+          // 2. Generate file by file. A rate-limited file pauses the build
+          // with a countdown and retries instead of failing everything.
           setPhase("generating");
           siteFiles = [];
           for (const file of sitePlan) {
             if (cancelled.current) return;
             setStatuses((s) => ({ ...s, [file.path]: "generating" }));
-            const res = await fetch(`/api/projects/${project.id}/site/file`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...userApiHeaders() },
-              body: JSON.stringify({ plan: sitePlan, file }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? `Failed to generate ${file.path}`);
-            siteFiles.push({ path: file.path, code: data.code });
+
+            let attempt = 0;
+            for (;;) {
+              const res = await fetch(`/api/projects/${project.id}/site/file`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...userApiHeaders() },
+                body: JSON.stringify({ plan: sitePlan, file }),
+              });
+              const data = await res.json();
+              if (res.ok) {
+                siteFiles.push({ path: file.path, code: data.code });
+                break;
+              }
+              if (res.status === 429 && attempt < 2 && !cancelled.current) {
+                attempt++;
+                for (let s = 60; s > 0 && !cancelled.current; s--) {
+                  setWaitingSecs(s);
+                  await new Promise((r) => setTimeout(r, 1000));
+                }
+                setWaitingSecs(0);
+                continue;
+              }
+              throw new Error(data.error ?? `Failed to generate ${file.path}`);
+            }
+
             setFiles([...siteFiles]);
             setStatuses((s) => ({ ...s, [file.path]: "done" }));
           }
@@ -201,11 +220,13 @@ export default function SiteBuilder({
             {project.name} — website
           </h3>
           <span className="text-xs font-mono" style={{ color: "var(--muted)" }}>
-            {phase === "generating"
-              ? `${PHASE_LABEL[phase]} ${doneCount}/${plan.length}`
-              : phase === "error"
-                ? errorMsg ?? PHASE_LABEL.error
-                : PHASE_LABEL[phase]}
+            {waitingSecs > 0
+              ? `AI at capacity — retrying in ${waitingSecs}s (${doneCount}/${plan.length} files done)`
+              : phase === "generating"
+                ? `${PHASE_LABEL[phase]} ${doneCount}/${plan.length}`
+                : phase === "error"
+                  ? errorMsg ?? PHASE_LABEL.error
+                  : PHASE_LABEL[phase]}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -345,9 +366,11 @@ export default function SiteBuilder({
                       />
                     </div>
                     <div className="text-sm mb-1">
-                      {phase === "generating"
-                        ? `Writing ${doneCount + 1 > plan.length ? plan.length : doneCount + 1} of ${plan.length} files`
-                        : PHASE_LABEL[phase]}
+                      {waitingSecs > 0
+                        ? `Free AI capacity refilling — resuming in ${waitingSecs}s`
+                        : phase === "generating"
+                          ? `Writing ${doneCount + 1 > plan.length ? plan.length : doneCount + 1} of ${plan.length} files`
+                          : PHASE_LABEL[phase]}
                     </div>
                     <div className="text-xs" style={{ color: "var(--muted)" }}>
                       Pegasus is building the full site from your blueprint — pages, components,

@@ -773,7 +773,17 @@ async function completeText(
     if (!isRateLimit(err)) throw err;
     if (hasGroqFallback(resolveBackend(keys))) {
       console.warn("[ai] rate limited — failing over to Groq");
-      return completeTextGroq(system, user, maxTokens);
+      try {
+        return await completeTextGroq(system, user, maxTokens);
+      } catch (groqErr) {
+        // Both pools limited: wait out the shorter suggested delay, then
+        // try Groq once more (per-minute windows reset quickly).
+        if (!isRateLimit(groqErr)) throw groqErr;
+        const wait = Math.min(retryDelayMs(err), retryDelayMs(groqErr), 45_000);
+        console.warn(`[ai] both pools limited — waiting ${wait}ms`);
+        await new Promise((r) => setTimeout(r, wait));
+        return completeTextGroq(system, user, maxTokens);
+      }
     }
     await new Promise((r) => setTimeout(r, retryDelayMs(err)));
     return completeTextOnce(system, user, keys, maxTokens);
