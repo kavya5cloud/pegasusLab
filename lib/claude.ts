@@ -61,7 +61,38 @@ export function getRoutingTable(): Record<TaskType, string> {
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
 function geminiModel(): string {
-  return process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  // gemini-2.0-flash no longer has free-tier quota (limit 0); 2.5-flash does.
+  return process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+}
+
+// ─── Rate-limit handling ─────────────────────────────────────────────────────
+
+function isRateLimit(err: unknown): boolean {
+  const s = err instanceof Error ? err.message : String(err);
+  return s.includes("RESOURCE_EXHAUSTED") || s.includes("429") || /quota/i.test(s);
+}
+
+/** Parse Google's suggested retry delay (e.g. "39.7s") from a 429 payload. */
+function retryDelayMs(err: unknown): number {
+  const s = err instanceof Error ? err.message : String(err);
+  const m = s.match(/retry(?:Delay)?[^0-9]*([0-9.]+)s/i);
+  const secs = m ? Math.ceil(parseFloat(m[1])) : 20;
+  return Math.min(secs, 50) * 1000; // stay inside serverless maxDuration
+}
+
+/** Turn provider errors into something a user can act on. */
+export function friendlyAIError(err: unknown): { message: string; status: number } {
+  if (isRateLimit(err)) {
+    return {
+      message:
+        "The AI provider is at capacity right now (rate limit). Wait a minute and try again — your work is saved.",
+      status: 429,
+    };
+  }
+  return {
+    message: err instanceof Error ? err.message : "AI request failed",
+    status: 500,
+  };
 }
 
 type OllamaOpts = { url?: string; model?: string };
@@ -683,8 +714,6 @@ export async function generatePreviewApp(
   gap: Gap,
   keys: OverrideKeys = {}
 ): Promise<string> {
-  const backend = resolveBackend(keys);
-  const ollamaOpts: OllamaOpts = { url: keys.ollamaUrl, model: keys.ollamaModel };
   const bp = project.blueprint;
 
   const context = {
@@ -700,40 +729,34 @@ export async function generatePreviewApp(
   };
   const userMessage = `Generate the App.jsx that demonstrates the solution to this gap.\n\n${JSON.stringify(context, null, 2)}`;
 
-  let raw = "";
-  if (backend === "anthropic") {
-    const res = await anthropicClient(keys.anthropic).messages.create({
-      model: routeModel("codegen"),
-      max_tokens: 8000,
-      system: PREVIEW_SYSTEM,
-      messages: [{ role: "user", content: userMessage }],
-    });
-    raw = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
-  } else if (backend === "gemini") {
-    const res = await geminiClient(keys.google).models.generateContent({
-      model: geminiModel(),
-      contents: `${PREVIEW_SYSTEM}\n\n${userMessage}`,
-    });
-    raw = res.text ?? "";
-  } else {
-    const res = await openaiClient(ollamaOpts).chat.completions.create({
-      model: openaiModel(ollamaOpts),
-      max_tokens: 8000,
-      messages: [
-        { role: "system", content: PREVIEW_SYSTEM },
-        { role: "user", content: userMessage },
-      ],
-    });
-    raw = res.choices[0]?.message?.content ?? "";
-  }
-
+  const raw = await completeText(PREVIEW_SYSTEM, userMessage, keys, 8000);
   return stripCodeFences(raw);
 }
 
 // ─── Website generation (full multi-file site) ───────────────────────────────
 
-/** One-shot text completion across whichever backend is active. */
+/**
+ * One-shot text completion across whichever backend is active.
+ * Retries once on provider rate limits, honouring the suggested delay —
+ * free-tier per-minute quotas routinely trip mid-way through multi-call
+ * flows like the website builder.
+ */
 async function completeText(
+  system: string,
+  user: string,
+  keys: OverrideKeys,
+  maxTokens = 8000
+): Promise<string> {
+  try {
+    return await completeTextOnce(system, user, keys, maxTokens);
+  } catch (err) {
+    if (!isRateLimit(err)) throw err;
+    await new Promise((r) => setTimeout(r, retryDelayMs(err)));
+    return completeTextOnce(system, user, keys, maxTokens);
+  }
+}
+
+async function completeTextOnce(
   system: string,
   user: string,
   keys: OverrideKeys,

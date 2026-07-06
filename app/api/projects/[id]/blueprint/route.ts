@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateBlueprint, isDemoMode } from "@/lib/claude";
+import { friendlyAIError, generateBlueprint, isDemoMode } from "@/lib/claude";
 import { demoBlueprint } from "@/lib/demo";
 import { fetchRepoContext } from "@/lib/github";
 import { getProject, updateProject } from "@/lib/store";
@@ -45,7 +45,7 @@ export async function POST(
     const updated = await updateProject(id, { blueprint, demo }, owner);
     return NextResponse.json(updated);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "blueprint failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const { message, status } = friendlyAIError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

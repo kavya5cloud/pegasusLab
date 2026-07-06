@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateSitePlan, isDemoMode } from "@/lib/claude";
+import { friendlyAIError, generateSitePlan, isDemoMode } from "@/lib/claude";
 import { demoSitePlan } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
@@ -34,9 +34,7 @@ export async function POST(
     const plan = await generateSitePlan(project, overrideKeys);
     return NextResponse.json({ plan, demo: false });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Site planning failed" },
-      { status: 500 }
-    );
+    const { message, status } = friendlyAIError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

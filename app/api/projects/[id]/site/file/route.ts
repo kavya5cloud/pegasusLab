@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateSiteFile, isDemoMode } from "@/lib/claude";
+import { friendlyAIError, generateSiteFile, isDemoMode } from "@/lib/claude";
 import { demoSiteFiles } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
@@ -47,9 +47,7 @@ export async function POST(
     const code = await generateSiteFile(project, plan, file, overrideKeys);
     return NextResponse.json({ code });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "File generation failed" },
-      { status: 500 }
-    );
+    const { message, status } = friendlyAIError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

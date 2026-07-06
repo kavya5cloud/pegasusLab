@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generatePreviewApp, isDemoMode } from "@/lib/claude";
+import { friendlyAIError, generatePreviewApp, isDemoMode } from "@/lib/claude";
 import { demoPreviewApp } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
@@ -43,9 +43,7 @@ export async function POST(
     if (!code.includes("export default")) code = demoPreviewApp(gap);
     return NextResponse.json({ code });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Preview generation failed" },
-      { status: 500 }
-    );
+    const { message, status } = friendlyAIError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }
