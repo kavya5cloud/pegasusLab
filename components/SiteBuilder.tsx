@@ -170,7 +170,17 @@ export default function SiteBuilder({
         dev.output.pipeTo(new WritableStream({ write: (c) => log(c) }));
       } catch (err) {
         if (cancelled.current) return;
-        setErrorMsg(err instanceof Error ? err.message : "Site build failed");
+        const msg = err instanceof Error ? err.message : "Site build failed";
+        // Safari can't run the in-browser sandbox (structured-clone /
+        // SharedArrayBuffer limitations). The files are already generated
+        // and saved — only the live preview is unavailable.
+        if (/cloned|SharedArrayBuffer|crossOriginIsolated/i.test(msg)) {
+          setErrorMsg(
+            "Live preview isn't supported in this browser (Safari) — but your website was generated and saved. Download the zip or push to GitHub below, or open this page in Chrome to preview it live."
+          );
+        } else {
+          setErrorMsg(msg);
+        }
         setPhase("error");
       }
     })();

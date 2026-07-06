@@ -117,6 +117,7 @@ export function siteTree(projectName: string, generated: SiteFile[]): FileSystem
   }
   const tree: FileSystemTree = {};
   for (const file of all) {
+    if (!file?.path || typeof file.code !== "string") continue;
     const parts = file.path.split("/").filter(Boolean);
     let node: FileSystemTree = tree;
     for (let i = 0; i < parts.length - 1; i++) {
