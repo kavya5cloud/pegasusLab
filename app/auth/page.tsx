@@ -28,6 +28,17 @@ export default function AuthPage() {
     if (params.get("mode") === "signup") setMode("signup");
     const n = params.get("next");
     if (n) setNext(n);
+    // Auth.js redirects failures here with ?error=...
+    const authError = params.get("error");
+    if (authError) {
+      setError(
+        authError === "Configuration"
+          ? "The server is missing its auth configuration (AUTH_SECRET). If you are the site owner, set it and redeploy."
+          : authError === "CredentialsSignin"
+            ? "Wrong email or password — or no account yet. Try creating one."
+            : `Sign-in failed (${authError}). Please try again.`
+      );
+    }
     // Already signed in (localStorage or NextAuth session)? Straight through.
     fetchUser().then((u) => { if (u) router.replace(n || "/projects"); });
     fetch("/api/status")

@@ -55,7 +55,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   // JWT cookie sessions — no database needed for auth itself.
   session: { strategy: "jwt" },
-  pages: { signIn: "/auth" },
+  // Send errors back to our sign-in page (with ?error=...) instead of the
+  // dead-end default "server configuration" screen.
+  pages: { signIn: "/auth", error: "/auth" },
   trustHost: true,
   // A real AUTH_SECRET is required in production; fall back to a throwaway
   // value in development so the session endpoint never 500s before it's set.

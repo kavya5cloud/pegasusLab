@@ -10,6 +10,7 @@ export async function GET() {
       ? `Groq (${process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile"})`
       : null,
     auth: availableProviders(),
+    authSecret: !!process.env.AUTH_SECRET,
     db: !!process.env.DATABASE_URL,
   });
 }
