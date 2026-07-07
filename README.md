@@ -2,7 +2,7 @@
 
 #  Pegasus Lab
 
-### From Whiteboard to Production.
+### From Whiteboard to Production. 
 
 Build production-ready software with AI-powered planning, blueprint generation, validation, and intelligent engineering.
 
