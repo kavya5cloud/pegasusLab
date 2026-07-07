@@ -127,8 +127,29 @@ function hasGroqFallback(backend: Backend): boolean {
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
-const NodeTypeSchema = z.enum(["page", "component", "api", "service", "database", "external", "design", "doc"]);
-const StatusSchema = z.enum(["existing", "partial", "missing"]);
+/**
+ * Lenient enum: normalises model output ("One-to-Many", "one_to_many",
+ * "MANY TO MANY") to the canonical value, and falls back to a default for
+ * anything unrecognised instead of failing the entire blueprint — free-tier
+ * models drift on enum labels.
+ */
+function lenientEnum<const T extends readonly [string, ...string[]]>(
+  values: T,
+  fallback: T[number]
+) {
+  const key = (s: string) => s.trim().toLowerCase().replace(/[\s_]+/g, "-");
+  const canonical = new Map(values.map((v) => [key(v), v]));
+  return z.preprocess(
+    (v) => (typeof v === "string" ? canonical.get(key(v)) ?? v : v),
+    z.enum(values)
+  ).catch(fallback);
+}
+
+const NodeTypeSchema = lenientEnum(
+  ["page", "component", "api", "service", "database", "external", "design", "doc"],
+  "component"
+);
+const StatusSchema = lenientEnum(["existing", "partial", "missing"], "partial");
 
 const PrdSchema = z.object({
   vision: z.string(),
@@ -137,7 +158,7 @@ const PrdSchema = z.object({
   coreFeatures: z.array(z.object({
     name: z.string(),
     description: z.string(),
-    priority: z.enum(["must-have", "should-have", "nice-to-have"]),
+    priority: lenientEnum(["must-have", "should-have", "nice-to-have"], "should-have"),
   })),
   nonGoals: z.array(z.string()),
   successMetrics: z.array(z.string()),
@@ -159,16 +180,16 @@ const DatabaseSchemaZ = z.object({
   })),
   relationships: z.array(z.object({
     from: z.string(), to: z.string(),
-    type: z.enum(["one-to-one", "one-to-many", "many-to-many"]),
+    type: lenientEnum(["one-to-one", "one-to-many", "many-to-many"], "one-to-many"),
     via: z.string().optional(),
   })),
 }).optional();
 
 const ApiArchitectureZ = z.object({
-  style: z.enum(["REST", "GraphQL", "gRPC", "tRPC"]),
+  style: lenientEnum(["REST", "GraphQL", "gRPC", "tRPC"], "REST"),
   authStrategy: z.string(),
   endpoints: z.array(z.object({
-    method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
+    method: lenientEnum(["GET", "POST", "PUT", "PATCH", "DELETE"], "GET"),
     path: z.string(),
     description: z.string(),
     auth: z.boolean(),
@@ -185,7 +206,7 @@ const FrontendArchitectureZ = z.object({
 }).optional();
 
 const BackendArchitectureZ = z.object({
-  pattern: z.enum(["monolith", "microservices", "serverless", "hybrid"]),
+  pattern: lenientEnum(["monolith", "microservices", "serverless", "hybrid"], "monolith"),
   services: z.array(z.object({ name: z.string(), responsibility: z.string(), tech: z.string() })),
   scalingNotes: z.string(),
 }).optional();
@@ -233,7 +254,10 @@ const ProjectMemoryZ = z.object({
 const ContextGraphZ = z.object({
   nodes: z.array(z.object({
     id: z.string(),
-    type: z.enum(["requirement", "design", "api", "database", "userflow", "code", "component", "service"]),
+    type: lenientEnum(
+      ["requirement", "design", "api", "database", "userflow", "code", "component", "service"],
+      "component"
+    ),
     label: z.string(),
     sourceId: z.string().optional(),
   })),
@@ -264,8 +288,8 @@ const BlueprintSchema = z.object({
   })),
   gaps: z.array(z.object({
     title: z.string(),
-    severity: z.enum(["critical", "high", "medium", "low"]),
-    category: z.enum(["missing-feature", "integration", "architecture", "security", "data", "ux"]),
+    severity: lenientEnum(["critical", "high", "medium", "low"], "medium"),
+    category: lenientEnum(["missing-feature", "integration", "architecture", "security", "data", "ux"], "missing-feature"),
     description: z.string(),
     recommendation: z.string(),
     relatedNodeIds: z.array(z.string()),
