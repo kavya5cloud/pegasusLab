@@ -47,31 +47,35 @@ html {
 
 /* ─── Glassmorphism tokens ────────────────────────────────────────────────── */
 :root {
-  --glass: rgba(255, 255, 255, 0.62);
-  --glass-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.75);
-  --glass-shadow: 0 10px 40px rgba(31, 38, 90, 0.18);
+  /* Clear glass — a light tint, not an opaque frost. */
+  --glass: rgba(255, 255, 255, 0.24);
+  --glass-strong: rgba(255, 255, 255, 0.38);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-shadow: 0 10px 40px rgba(30, 58, 138, 0.16);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 html.dark {
-  --glass: rgba(20, 20, 30, 0.42);
-  --glass-strong: rgba(26, 26, 38, 0.66);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  --glass: rgba(255, 255, 255, 0.07);
+  --glass-strong: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* Blur comes from Tailwind's backdrop utilities (@apply) — a hand-written
-   backdrop-filter here gets stripped by the Lightning CSS build step. */
+/* Clear glass: no frost/blur. The glassy read comes from a light tint, a
+   bright edge, a subtle backdrop saturate/brighten, and an inner highlight.
+   (Backdrop utilities via @apply — a hand-written backdrop-filter gets
+   stripped by the Lightning CSS build step.) */
 .glass {
-  @apply backdrop-blur-xl backdrop-saturate-150;
+  @apply backdrop-saturate-150 backdrop-brightness-105;
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .glass-strong {
-  @apply backdrop-blur-2xl backdrop-saturate-150;
+  @apply backdrop-saturate-150 backdrop-brightness-110;
   background: var(--glass-strong);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 /* A lift-on-hover interaction shared across cards and buttons */
@@ -95,40 +99,40 @@ html.dark {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(135deg, #1e3a8a 0%, #4338ca 30%, #7e22ce 55%, #db2777 80%, #ea580c 100%);
+  background: linear-gradient(140deg, #cfe0ff 0%, #a9c7ff 40%, #bcd2ff 70%, #dbe6ff 100%);
 }
 html.dark .aurora {
-  background: linear-gradient(135deg, #0b1a4a 0%, #241063 32%, #3b0a52 58%, #5c1030 82%, #5c2408 100%);
+  background: linear-gradient(140deg, #060b1c 0%, #0a1430 45%, #0b1226 72%, #070a18 100%);
 }
 .aurora__blob {
   position: absolute;
   width: 62vw;
   height: 62vw;
   border-radius: 50%;
-  filter: blur(64px);
-  opacity: 0.95;
+  filter: blur(72px);
+  opacity: 0.8;
   will-change: transform;
 }
 html.dark .aurora__blob {
-  opacity: 0.8;
+  opacity: 0.55;
 }
 .aurora__blob--1 {
-  background: radial-gradient(circle, #3d7bff 0%, transparent 66%);
+  background: radial-gradient(circle, #5b8dff 0%, transparent 66%);
   top: -18vw; left: -12vw;
   animation: drift-1 26s ease-in-out infinite;
 }
 .aurora__blob--2 {
-  background: radial-gradient(circle, #ff9a3d 0%, transparent 66%);
+  background: radial-gradient(circle, #7fb0ff 0%, transparent 66%);
   top: 4vh; right: -18vw;
   animation: drift-2 32s ease-in-out infinite;
 }
 .aurora__blob--3 {
-  background: radial-gradient(circle, #22d3ee 0%, transparent 66%);
+  background: radial-gradient(circle, #4fc3ff 0%, transparent 66%);
   bottom: -20vw; left: 10vw;
   animation: drift-3 38s ease-in-out infinite;
 }
 .aurora__blob--4 {
-  background: radial-gradient(circle, #f43f8e 0%, transparent 66%);
+  background: radial-gradient(circle, #6f7dff 0%, transparent 66%);
   bottom: -8vw; right: 2vw;
   animation: drift-4 30s ease-in-out infinite;
 }

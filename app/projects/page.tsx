@@ -453,7 +453,7 @@ export default function Dashboard() {
             <button
               onClick={() => promptRef.current?.focus()}
               className="lift inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-4 py-2 shadow-lg"
-              style={{ background: "linear-gradient(135deg, #4f6bff 0%, #9b5cff 50%, #ff6b9d 100%)" }}
+              style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)" }}
             >
               <Icon name="plus" size={12} strokeWidth={2.6} />
               <span>New build</span>
