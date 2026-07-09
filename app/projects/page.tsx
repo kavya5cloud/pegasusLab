@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import ThemeToggle from "@/components/ThemeToggle";
+import AuroraBackground from "@/components/AuroraBackground";
 import { signOut as oauthSignOut } from "next-auth/react";
 import { fetchUser, hasAnyApiKey, signOut, type SessionUser } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
@@ -60,7 +61,7 @@ function Skeleton({ className }: { className?: string }) {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border bg-white p-5" style={{ borderColor: "var(--hairline)" }}>
+    <div className="glass rounded-2xl p-5">
       <div className="flex items-center justify-between mb-3">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-5 w-24 rounded-full" />
@@ -386,13 +387,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--paper)", color: "var(--ink)" }}>
+    <div className="flex h-screen overflow-hidden relative" style={{ color: "var(--ink)" }}>
+      <AuroraBackground />
 
       {/* ── Desktop sidebar ── */}
-      <aside
-        className="hidden md:flex flex-col w-56 shrink-0 border-r h-full"
-        style={{ borderColor: "var(--hairline)", background: "white" }}
-      >
+      <aside className="hidden md:flex flex-col w-56 shrink-0 h-full relative z-10 glass">
         {renderSidebar()}
       </aside>
 
@@ -405,19 +404,18 @@ export default function Dashboard() {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col border-r transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-        style={{ borderColor: "var(--hairline)", background: "white" }}
+        className={`fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col glass-strong transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         {renderSidebar(() => setSidebarOpen(false))}
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
 
         {/* Top bar */}
         <header
-          className="shrink-0 flex items-center gap-3 px-5 py-3 border-b bg-white"
-          style={{ borderColor: "var(--hairline)" }}
+          className="shrink-0 flex items-center gap-3 px-5 py-3 glass"
+          style={{ borderRadius: 0 }}
         >
           {/* Mobile: hamburger */}
           <button
@@ -553,10 +551,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <form onSubmit={quickStart}>
-                <div
-                  className="bg-white rounded-2xl border shadow-sm p-3.5 flex items-center gap-3"
-                  style={{ borderColor: "var(--hairline)" }}
-                >
+                <div className="glass rounded-2xl p-3.5 flex items-center gap-3">
                   <Icon name="idea" size={15} strokeWidth={1.8} style={{ color: "var(--ink-muted)", flexShrink: 0 }} />
                   <input
                     ref={promptRef}
@@ -591,12 +586,12 @@ export default function Dashboard() {
                   <button
                     key={stat.key}
                     onClick={() => setFilter(active && stat.key !== "all" ? "all" : stat.key)}
-                    className="rounded-2xl border p-4 flex items-start justify-between text-left transition-all hover:shadow-sm"
-                    style={{
-                      borderColor: active ? "#2563eb" : "var(--hairline)",
-                      background: active ? "#eff6ff" : "white",
-                      boxShadow: active ? "0 0 0 1px #2563eb" : undefined,
-                    }}
+                    className="glass lift rounded-2xl p-4 flex items-start justify-between text-left"
+                    style={
+                      active
+                        ? { borderColor: "#2563eb", boxShadow: "0 0 0 1px #2563eb, var(--glass-shadow)" }
+                        : undefined
+                    }
                   >
                     <div>
                       {loading ? (
@@ -715,10 +710,7 @@ export default function Dashboard() {
                 {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
               </div>
             ) : projects.length === 0 ? (
-              <div
-                className="rounded-2xl border bg-white p-12 text-center"
-                style={{ borderColor: "var(--hairline)" }}
-              >
+              <div className="glass rounded-2xl p-12 text-center">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "#eff6ff" }}>
                   <Icon name="board" size={18} strokeWidth={1.5} style={{ color: "#2563eb" }} />
                 </div>
@@ -736,10 +728,7 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : visible.length === 0 ? (
-              <div
-                className="rounded-2xl border bg-white p-10 text-center"
-                style={{ borderColor: "var(--hairline)" }}
-              >
+              <div className="glass rounded-2xl p-10 text-center">
                 <p className="text-[14px] font-medium mb-1">No results</p>
                 <p className="text-[12px] mb-4" style={{ color: "var(--ink-muted)" }}>
                   {search
@@ -763,8 +752,7 @@ export default function Dashboard() {
                     <Link
                       key={p.id}
                       href={`/project/${p.id}`}
-                      className="group rounded-2xl border bg-white p-5 hover:border-neutral-400 hover:shadow-sm transition-all"
-                      style={{ borderColor: "var(--hairline)" }}
+                      className="group glass lift rounded-2xl p-5"
                     >
                       {/* Card header */}
                       <div className="flex items-start justify-between gap-2 mb-2">
