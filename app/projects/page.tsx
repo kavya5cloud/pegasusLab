@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import ThemeToggle from "@/components/ThemeToggle";
-import AuroraBackground from "@/components/AuroraBackground";
 import { signOut as oauthSignOut } from "next-auth/react";
 import { fetchUser, hasAnyApiKey, signOut, type SessionUser } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
@@ -23,10 +22,10 @@ function timeAgo(iso: string): string {
 }
 
 const SEV_COLOR: Record<GapSeverity, string> = {
-  critical: "#be123c",
-  high: "#c2410c",
-  medium: "#b45309",
-  low: "#6b6963",
+  critical: "#111111",
+  high: "#555555",
+  medium: "#8a8a8a",
+  low: "#bcbcbc",
 };
 const SEV_ORDER: GapSeverity[] = ["critical", "high", "medium", "low"];
 
@@ -43,9 +42,9 @@ function StatusBar({ project }: { project: Project }) {
   const pct = (s: string) => (bp.nodes.filter((n) => n.status === s).length / total) * 100;
   return (
     <div className="h-0.5 rounded-full overflow-hidden flex" style={{ background: "var(--hairline)" }}>
-      <span style={{ width: `${pct("existing")}%`, background: "#15803d" }} />
-      <span style={{ width: `${pct("partial")}%`, background: "#b45309" }} />
-      <span style={{ width: `${pct("missing")}%`, background: "#be123c" }} />
+      <span style={{ width: `${pct("existing")}%`, background: "#222222" }} />
+      <span style={{ width: `${pct("partial")}%`, background: "#999999" }} />
+      <span style={{ width: `${pct("missing")}%`, background: "#d0d0d0" }} />
     </div>
   );
 }
@@ -61,7 +60,7 @@ function Skeleton({ className }: { className?: string }) {
 
 function SkeletonCard() {
   return (
-    <div className="glass rounded-2xl p-5">
+    <div className="rounded-2xl border p-5" style={{ background: "#ffffff", borderColor: "#e5e5e5" }}>
       <div className="flex items-center justify-between mb-3">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-5 w-24 rounded-full" />
@@ -305,7 +304,7 @@ export default function Dashboard() {
                 <Icon name={item.icon} size={14} strokeWidth={1.8} />
                 {item.label}
                 {active && (
-                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-black" />
                 )}
               </Link>
             );
@@ -338,7 +337,7 @@ export default function Dashboard() {
               >
                 <span
                   className="h-1.5 w-1.5 rounded-full shrink-0"
-                  style={{ background: p.blueprint ? "#15803d" : "#d0cfc8" }}
+                  style={{ background: p.blueprint ? "#111111" : "#c9c9c9" }}
                 />
                 <span className="truncate">{p.name}</span>
               </Link>
@@ -361,7 +360,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
             <div
               className="h-7 w-7 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shrink-0"
-              style={{ background: "#2563eb" }}
+              style={{ background: "#111111" }}
             >
               {user.name.charAt(0).toUpperCase()}
             </div>
@@ -387,11 +386,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden relative gap-3 p-3" style={{ color: "var(--ink)" }}>
-      <AuroraBackground />
+    <div className="flex h-screen overflow-hidden" style={{ background: "#f7f7f7", color: "#111111" }}>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 h-full relative z-10 glass rounded-3xl overflow-hidden">
+      <aside
+        className="hidden md:flex flex-col w-56 shrink-0 h-full border-r"
+        style={{ borderColor: "#e5e5e5", background: "#ffffff" }}
+      >
         {renderSidebar()}
       </aside>
 
@@ -404,16 +405,20 @@ export default function Dashboard() {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col glass-strong transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-0 left-0 h-full w-64 z-50 md:hidden flex flex-col border-r transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ borderColor: "#e5e5e5", background: "#ffffff" }}
       >
         {renderSidebar(() => setSidebarOpen(false))}
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 gap-3">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top bar */}
-        <header className="shrink-0 flex items-center gap-3 px-4 py-2.5 glass rounded-3xl">
+        <header
+          className="shrink-0 flex items-center gap-3 px-5 py-3 border-b"
+          style={{ borderColor: "#e5e5e5", background: "#ffffff" }}
+        >
           {/* Mobile: hamburger */}
           <button
             className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg hover:bg-black/5"
@@ -422,10 +427,10 @@ export default function Dashboard() {
             <Icon name="menu" size={16} strokeWidth={2} />
           </button>
 
-          {/* Search — its own glass pill */}
+          {/* Search */}
           <div
-            className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-full glass-strong text-[13px]"
-            style={{ maxWidth: 380 }}
+            className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-full border text-[13px]"
+            style={{ maxWidth: 380, borderColor: "#e5e5e5", background: "#f7f7f7" }}
           >
             <Icon name="search" size={13} strokeWidth={2} style={{ color: "var(--ink-muted)", flexShrink: 0 }} />
             <input
@@ -441,8 +446,8 @@ export default function Dashboard() {
               </button>
             ) : (
               <kbd
-                className="hidden sm:inline-flex items-center gap-0.5 font-mono text-[10px] rounded px-1.5 py-0.5"
-                style={{ color: "var(--ink-muted)", background: "rgba(255,255,255,0.5)" }}
+                className="hidden sm:inline-flex items-center gap-0.5 font-mono text-[10px] rounded px-1.5 py-0.5 border"
+                style={{ color: "#6b6b6b", borderColor: "#e5e5e5", background: "#ffffff" }}
               >
                 ⌘K
               </kbd>
@@ -452,12 +457,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={() => promptRef.current?.focus()}
-              className="lift inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-4 py-2 shadow-lg"
-              style={{ background: "linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)" }}
+              className="inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-4 py-2 hover:opacity-85 transition-opacity"
+              style={{ background: "#111111" }}
             >
               <Icon name="plus" size={12} strokeWidth={2.6} />
               <span>New build</span>
-              <kbd className="hidden sm:inline-flex items-center font-mono text-[9px] bg-white/25 rounded px-1 py-0.5 ml-0.5">
+              <kbd className="hidden sm:inline-flex items-center font-mono text-[9px] bg-white/20 rounded px-1 py-0.5 ml-0.5">
                 ⌘N
               </kbd>
             </button>
@@ -470,10 +475,13 @@ export default function Dashboard() {
 
             {/* Onboarding banner — shown when no AI key is configured */}
             {showKeyBanner && (
-              <div className="glass mb-5 rounded-2xl px-5 py-4 flex items-start gap-4">
+              <div
+                className="mb-5 rounded-2xl border px-5 py-4 flex items-start gap-4"
+                style={{ background: "#ffffff", borderColor: "#e5e5e5" }}
+              >
                 <div className="text-2xl shrink-0">⚡</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold" style={{ color: "#4338ca" }}>
+                  <p className="text-[13px] font-semibold" style={{ color: "#111111" }}>
                     Add your Gemini API key to activate the AI engine
                   </p>
                   <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
@@ -485,7 +493,7 @@ export default function Dashboard() {
                   <Link
                     href="/settings?setup=1"
                     className="text-[12px] font-medium rounded-full px-4 py-1.5 text-white transition-colors"
-                    style={{ background: "#4f46e5" }}
+                    style={{ background: "#111111" }}
                   >
                     Add key →
                   </Link>
@@ -535,16 +543,19 @@ export default function Dashboard() {
                 <span
                   className="text-[11px] font-mono px-2.5 py-1 rounded-full"
                   style={{
-                    background: remaining === 0 ? "rgba(220,38,38,0.08)" : "rgba(16,185,129,0.08)",
-                    color: remaining === 0 ? "#dc2626" : "#059669",
-                    border: `1px solid ${remaining === 0 ? "rgba(220,38,38,0.2)" : "rgba(16,185,129,0.2)"}`,
+                    background: remaining === 0 ? "#f0f0f0" : "#ffffff",
+                    color: remaining === 0 ? "#111111" : "#6b6b6b",
+                    border: "1px solid #e5e5e5",
                   }}
                 >
                   {remaining === 0 ? "0 builds left this week" : `${remaining} of 2 builds left`}
                 </span>
               </div>
               <form onSubmit={quickStart}>
-                <div className="glass rounded-2xl p-3.5 flex items-center gap-3">
+                <div
+                  className="rounded-2xl border shadow-sm p-3.5 flex items-center gap-3"
+                  style={{ background: "#ffffff", borderColor: "#e5e5e5" }}
+                >
                   <Icon name="idea" size={15} strokeWidth={1.8} style={{ color: "var(--ink-muted)", flexShrink: 0 }} />
                   <input
                     ref={promptRef}
@@ -556,7 +567,7 @@ export default function Dashboard() {
                   <button
                     type="submit"
                     disabled={creating || !prompt.trim() || remaining === 0}
-                    className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-medium rounded-full px-4 py-1.5 disabled:opacity-40 transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 bg-black hover:bg-neutral-800 text-white text-[12px] font-medium rounded-full px-4 py-1.5 disabled:opacity-40 transition-colors shrink-0"
                   >
                     {creating ? "Opening…" : "Start"}
                     {!creating && <Icon name="arrow-right" size={11} strokeWidth={2.2} />}
@@ -579,12 +590,12 @@ export default function Dashboard() {
                   <button
                     key={stat.key}
                     onClick={() => setFilter(active && stat.key !== "all" ? "all" : stat.key)}
-                    className="glass lift rounded-2xl p-4 flex items-start justify-between text-left"
-                    style={
-                      active
-                        ? { borderColor: "#2563eb", boxShadow: "0 0 0 1px #2563eb, var(--glass-shadow)" }
-                        : undefined
-                    }
+                    className="rounded-2xl border p-4 flex items-start justify-between text-left transition-all hover:shadow-sm"
+                    style={{
+                      background: "#ffffff",
+                      borderColor: active ? "#111111" : "#e5e5e5",
+                      boxShadow: active ? "0 0 0 1px #111111" : undefined,
+                    }}
                   >
                     <div>
                       {loading ? (
@@ -592,19 +603,19 @@ export default function Dashboard() {
                       ) : (
                         <div
                           className="serif text-3xl leading-none mb-1.5"
-                          style={{ color: active ? "#2563eb" : "var(--ink)" }}
+                          style={{ color: active ? "#111111" : "var(--ink)" }}
                         >
                           {stat.value}
                         </div>
                       )}
                       <div
                         className="text-[11px]"
-                        style={{ color: active ? "#2563eb" : "var(--ink-muted)" }}
+                        style={{ color: active ? "#111111" : "var(--ink-muted)" }}
                       >
                         {stat.label}
                       </div>
                     </div>
-                    <span style={{ color: active ? "#93c5fd" : "#d0cfc8" }}>
+                    <span style={{ color: active ? "#111111" : "#c9c9c9" }}>
                       <Icon name={stat.icon} size={15} strokeWidth={1.6} />
                     </span>
                   </button>
@@ -655,7 +666,7 @@ export default function Dashboard() {
               {filter !== "all" && (
                 <span
                   className="inline-flex items-center gap-1 text-[11px] font-mono rounded-full px-2.5 py-0.5 border"
-                  style={{ borderColor: "#bfdbfe", background: "#eff6ff", color: "#2563eb" }}
+                  style={{ borderColor: "#e5e5e5", background: "#f0f0f0", color: "#111111" }}
                 >
                   {activeLabel}
                   <button onClick={() => setFilter("all")} title="Clear filter">
@@ -703,9 +714,9 @@ export default function Dashboard() {
                 {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
               </div>
             ) : projects.length === 0 ? (
-              <div className="glass rounded-2xl p-12 text-center">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "#eff6ff" }}>
-                  <Icon name="board" size={18} strokeWidth={1.5} style={{ color: "#2563eb" }} />
+              <div className="rounded-2xl border p-12 text-center" style={{ background: "#ffffff", borderColor: "#e5e5e5" }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "#f0f0f0" }}>
+                  <Icon name="board" size={18} strokeWidth={1.5} style={{ color: "#111111" }} />
                 </div>
                 <p className="text-[14px] font-medium mb-1">Nothing on the board yet</p>
                 <p className="text-[12px] mb-6" style={{ color: "var(--ink-muted)" }}>
@@ -714,14 +725,14 @@ export default function Dashboard() {
                 <button
                   onClick={loadSample}
                   disabled={seeding}
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-[13px] font-medium rounded-full px-5 py-2 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-2 bg-black hover:bg-neutral-800 text-white text-[13px] font-medium rounded-full px-5 py-2 disabled:opacity-50 transition-colors"
                 >
                   {seeding ? "Seeding…" : "Load the sample build"}
                   {!seeding && <Icon name="arrow-right" size={12} strokeWidth={2.2} />}
                 </button>
               </div>
             ) : visible.length === 0 ? (
-              <div className="glass rounded-2xl p-10 text-center">
+              <div className="rounded-2xl border p-10 text-center" style={{ background: "#ffffff", borderColor: "#e5e5e5" }}>
                 <p className="text-[14px] font-medium mb-1">No results</p>
                 <p className="text-[12px] mb-4" style={{ color: "var(--ink-muted)" }}>
                   {search
@@ -730,7 +741,7 @@ export default function Dashboard() {
                 </p>
                 <button
                   onClick={() => { setFilter("all"); setSearch(""); }}
-                  className="text-[12px] text-blue-600 hover:underline"
+                  className="text-[12px] text-neutral-800 hover:underline"
                 >
                   Clear filters
                 </button>
@@ -745,7 +756,8 @@ export default function Dashboard() {
                     <Link
                       key={p.id}
                       href={`/project/${p.id}`}
-                      className="group glass lift rounded-2xl p-5"
+                      className="group rounded-2xl border p-5 hover:border-neutral-400 hover:shadow-sm transition-all"
+                      style={{ background: "#ffffff", borderColor: "#e5e5e5" }}
                     >
                       {/* Card header */}
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -763,7 +775,7 @@ export default function Dashboard() {
                               }}
                               onClick={(e) => e.preventDefault()}
                               className="w-full text-[13px] font-semibold outline-none border-b bg-transparent"
-                              style={{ borderColor: "#2563eb" }}
+                              style={{ borderColor: "#111111" }}
                             />
                           ) : (
                             <h3
@@ -784,8 +796,8 @@ export default function Dashboard() {
                           <span
                             className="text-[10px] font-mono uppercase tracking-wide rounded-full px-2 py-0.5 whitespace-nowrap"
                             style={{
-                              color: p.blueprint ? "#15803d" : "var(--ink-muted)",
-                              background: p.blueprint ? "rgba(21,128,61,0.08)" : "rgba(0,0,0,0.04)",
+                              color: p.blueprint ? "#111111" : "var(--ink-muted)",
+                              background: p.blueprint ? "#f0f0f0" : "rgba(0,0,0,0.04)",
                             }}
                           >
                             {p.blueprint ? "Blueprint ready" : "On the board"}
