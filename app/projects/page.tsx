@@ -387,11 +387,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden relative" style={{ color: "var(--ink)" }}>
+    <div className="flex h-screen overflow-hidden relative gap-3 p-3" style={{ color: "var(--ink)" }}>
       <AuroraBackground />
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 h-full relative z-10 glass">
+      <aside className="hidden md:flex flex-col w-56 shrink-0 h-full relative z-10 glass rounded-3xl overflow-hidden">
         {renderSidebar()}
       </aside>
 
@@ -410,13 +410,10 @@ export default function Dashboard() {
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 gap-3">
 
         {/* Top bar */}
-        <header
-          className="shrink-0 flex items-center gap-3 px-5 py-3 glass"
-          style={{ borderRadius: 0 }}
-        >
+        <header className="shrink-0 flex items-center gap-3 px-4 py-2.5 glass rounded-3xl">
           {/* Mobile: hamburger */}
           <button
             className="md:hidden flex items-center justify-center h-8 w-8 rounded-lg hover:bg-black/5"
@@ -425,10 +422,10 @@ export default function Dashboard() {
             <Icon name="menu" size={16} strokeWidth={2} />
           </button>
 
-          {/* Search */}
+          {/* Search — its own glass pill */}
           <div
-            className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[13px]"
-            style={{ borderColor: "var(--hairline)", background: "var(--paper)", maxWidth: 360 }}
+            className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-full glass-strong text-[13px]"
+            style={{ maxWidth: 380 }}
           >
             <Icon name="search" size={13} strokeWidth={2} style={{ color: "var(--ink-muted)", flexShrink: 0 }} />
             <input
@@ -444,8 +441,8 @@ export default function Dashboard() {
               </button>
             ) : (
               <kbd
-                className="hidden sm:inline-flex items-center gap-0.5 font-mono text-[10px] rounded px-1.5 py-0.5 border"
-                style={{ borderColor: "var(--hairline)", color: "var(--ink-muted)", background: "white" }}
+                className="hidden sm:inline-flex items-center gap-0.5 font-mono text-[10px] rounded px-1.5 py-0.5"
+                style={{ color: "var(--ink-muted)", background: "rgba(255,255,255,0.5)" }}
               >
                 ⌘K
               </kbd>
@@ -455,13 +452,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={() => promptRef.current?.focus()}
-              className="inline-flex items-center gap-1.5 bg-black text-white text-[12px] font-medium rounded-full px-4 py-1.5 hover:opacity-80 transition-opacity"
+              className="lift inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-4 py-2 shadow-lg"
+              style={{ background: "linear-gradient(135deg, #4f6bff 0%, #9b5cff 50%, #ff6b9d 100%)" }}
             >
-              <Icon name="plus" size={11} strokeWidth={2.5} />
+              <Icon name="plus" size={12} strokeWidth={2.6} />
               <span>New build</span>
-              <kbd
-                className="hidden sm:inline-flex items-center font-mono text-[9px] bg-white/20 rounded px-1 py-0.5 ml-0.5"
-              >
+              <kbd className="hidden sm:inline-flex items-center font-mono text-[9px] bg-white/25 rounded px-1 py-0.5 ml-0.5">
                 ⌘N
               </kbd>
             </button>
@@ -474,10 +470,7 @@ export default function Dashboard() {
 
             {/* Onboarding banner — shown when no AI key is configured */}
             {showKeyBanner && (
-              <div
-                className="mb-5 rounded-2xl border px-5 py-4 flex items-start gap-4"
-                style={{ background: "rgba(99,102,241,0.05)", borderColor: "rgba(99,102,241,0.25)" }}
-              >
+              <div className="glass mb-5 rounded-2xl px-5 py-4 flex items-start gap-4">
                 <div className="text-2xl shrink-0">⚡</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold" style={{ color: "#4338ca" }}>

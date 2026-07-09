@@ -47,17 +47,17 @@ html {
 
 /* ─── Glassmorphism tokens ────────────────────────────────────────────────── */
 :root {
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-strong: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 8px 32px rgba(31, 38, 90, 0.12);
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 10px 40px rgba(31, 38, 90, 0.18);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 html.dark {
-  --glass: rgba(24, 24, 32, 0.5);
-  --glass-strong: rgba(28, 28, 38, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass: rgba(20, 20, 30, 0.42);
+  --glass-strong: rgba(26, 26, 38, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
 }
 
 /* Blur comes from Tailwind's backdrop utilities (@apply) — a hand-written
@@ -95,49 +95,78 @@ html.dark {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(180deg, #f4f6ff 0%, #eef1fb 50%, #f6f4fb 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #4338ca 30%, #7e22ce 55%, #db2777 80%, #ea580c 100%);
 }
 html.dark .aurora {
-  background: linear-gradient(180deg, #0a0a14 0%, #0c0c18 50%, #0a0a12 100%);
+  background: linear-gradient(135deg, #0b1a4a 0%, #241063 32%, #3b0a52 58%, #5c1030 82%, #5c2408 100%);
 }
 .aurora__blob {
   position: absolute;
-  width: 46vw;
-  height: 46vw;
+  width: 62vw;
+  height: 62vw;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.55;
+  filter: blur(64px);
+  opacity: 0.95;
   will-change: transform;
 }
 html.dark .aurora__blob {
-  opacity: 0.4;
+  opacity: 0.8;
 }
 .aurora__blob--1 {
-  background: radial-gradient(circle, #7c9bff 0%, transparent 70%);
-  top: -12vw; left: -8vw;
-  animation: drift-1 28s ease-in-out infinite;
+  background: radial-gradient(circle, #3d7bff 0%, transparent 66%);
+  top: -18vw; left: -12vw;
+  animation: drift-1 26s ease-in-out infinite;
 }
 .aurora__blob--2 {
-  background: radial-gradient(circle, #b98bff 0%, transparent 70%);
-  top: 30vh; right: -12vw;
-  animation: drift-2 34s ease-in-out infinite;
+  background: radial-gradient(circle, #ff9a3d 0%, transparent 66%);
+  top: 4vh; right: -18vw;
+  animation: drift-2 32s ease-in-out infinite;
 }
 .aurora__blob--3 {
-  background: radial-gradient(circle, #6fe0d0 0%, transparent 70%);
-  bottom: -14vw; left: 24vw;
-  animation: drift-3 40s ease-in-out infinite;
+  background: radial-gradient(circle, #22d3ee 0%, transparent 66%);
+  bottom: -20vw; left: 10vw;
+  animation: drift-3 38s ease-in-out infinite;
+}
+.aurora__blob--4 {
+  background: radial-gradient(circle, #f43f8e 0%, transparent 66%);
+  bottom: -8vw; right: 2vw;
+  animation: drift-4 30s ease-in-out infinite;
 }
 @keyframes drift-1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(18vw, 12vh) scale(1.15); }
+  50% { transform: translate(20vw, 14vh) scale(1.18); }
 }
 @keyframes drift-2 {
   0%, 100% { transform: translate(0, 0) scale(1.1); }
-  50% { transform: translate(-16vw, 18vh) scale(0.9); }
+  50% { transform: translate(-18vw, 22vh) scale(0.88); }
 }
 @keyframes drift-3 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(12vw, -14vh) scale(1.2); }
+  50% { transform: translate(16vw, -16vh) scale(1.22); }
+}
+@keyframes drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1.05); }
+  50% { transform: translate(-14vw, -12vh) scale(0.92); }
+}
+
+/* Frosted top-left edge highlight, like light catching real glass */
+.glass, .glass-strong {
+  position: relative;
+}
+.glass::before, .glass-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+html.dark .glass::before, html.dark .glass-strong::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 40%);
 }
 
 @media (prefers-reduced-motion: reduce) {
