@@ -47,35 +47,37 @@ html {
 
 /* ─── Glassmorphism tokens ────────────────────────────────────────────────── */
 :root {
-  /* Clear glass — a light tint, not an opaque frost. */
-  --glass: rgba(255, 255, 255, 0.24);
-  --glass-strong: rgba(255, 255, 255, 0.38);
-  --glass-border: rgba(255, 255, 255, 0.85);
-  --glass-shadow: 0 10px 40px rgba(30, 58, 138, 0.16);
+  /* Apple-style vibrant glass — low white veil so the colour behind stays
+     vivid through the blur (that's what reads as "clear", not milky). */
+  --glass: rgba(255, 255, 255, 0.18);
+  --glass-strong: rgba(255, 255, 255, 0.3);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(30, 58, 138, 0.18);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 html.dark {
-  --glass: rgba(255, 255, 255, 0.07);
-  --glass-strong: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.22);
-  --glass-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-strong: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* Clear glass: no frost/blur. The glassy read comes from a light tint, a
-   bright edge, a subtle backdrop saturate/brighten, and an inner highlight.
-   (Backdrop utilities via @apply — a hand-written backdrop-filter gets
-   stripped by the Lightning CSS build step.) */
+/* Apple vibrant glass: blur + heavy saturation so the wallpaper colour glows
+   through, a low white veil, a bright specular edge and an inner top
+   highlight. (Backdrop utilities via @apply — a hand-written backdrop-filter
+   gets stripped by the Lightning CSS build step.) */
 .glass {
-  @apply backdrop-saturate-150 backdrop-brightness-105;
+  @apply backdrop-blur-md backdrop-saturate-200;
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
 }
 .glass-strong {
-  @apply backdrop-saturate-150 backdrop-brightness-110;
+  @apply backdrop-blur-lg backdrop-saturate-200;
   background: var(--glass-strong);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 /* A lift-on-hover interaction shared across cards and buttons */
@@ -109,30 +111,30 @@ html.dark .aurora {
   width: 62vw;
   height: 62vw;
   border-radius: 50%;
-  filter: blur(72px);
-  opacity: 0.8;
+  filter: blur(68px);
+  opacity: 0.9;
   will-change: transform;
 }
 html.dark .aurora__blob {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 .aurora__blob--1 {
-  background: radial-gradient(circle, #5b8dff 0%, transparent 66%);
+  background: radial-gradient(circle, #3b74ff 0%, transparent 66%);
   top: -18vw; left: -12vw;
   animation: drift-1 26s ease-in-out infinite;
 }
 .aurora__blob--2 {
-  background: radial-gradient(circle, #7fb0ff 0%, transparent 66%);
+  background: radial-gradient(circle, #5aa0ff 0%, transparent 66%);
   top: 4vh; right: -18vw;
   animation: drift-2 32s ease-in-out infinite;
 }
 .aurora__blob--3 {
-  background: radial-gradient(circle, #4fc3ff 0%, transparent 66%);
+  background: radial-gradient(circle, #22b8ff 0%, transparent 66%);
   bottom: -20vw; left: 10vw;
   animation: drift-3 38s ease-in-out infinite;
 }
 .aurora__blob--4 {
-  background: radial-gradient(circle, #6f7dff 0%, transparent 66%);
+  background: radial-gradient(circle, #4f63ff 0%, transparent 66%);
   bottom: -8vw; right: 2vw;
   animation: drift-4 30s ease-in-out infinite;
 }
