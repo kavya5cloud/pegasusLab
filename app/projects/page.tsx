@@ -416,7 +416,7 @@ export default function Dashboard() {
 
         {/* Top bar */}
         <header
-          className="shrink-0 flex items-center gap-3 px-5 py-3 border-b"
+          className="shrink-0 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 border-b"
           style={{ borderColor: "#e5e5e5", background: "#ffffff" }}
         >
           {/* Mobile: hamburger */}
@@ -454,14 +454,14 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <button
               onClick={() => promptRef.current?.focus()}
-              className="inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-4 py-2 hover:opacity-85 transition-opacity"
+              className="inline-flex items-center gap-1.5 text-white text-[12px] font-semibold rounded-full px-3 sm:px-4 py-2 hover:opacity-85 transition-opacity whitespace-nowrap"
               style={{ background: "#111111" }}
             >
               <Icon name="plus" size={12} strokeWidth={2.6} />
-              <span>New build</span>
+              <span className="hidden sm:inline">New build</span>
               <kbd className="hidden sm:inline-flex items-center font-mono text-[9px] bg-white/20 rounded px-1 py-0.5 ml-0.5">
                 ⌘N
               </kbd>
@@ -471,28 +471,30 @@ export default function Dashboard() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          <main className="px-6 py-6 max-w-5xl w-full mx-auto">
+          <main className="px-4 sm:px-6 py-5 sm:py-6 max-w-5xl w-full mx-auto">
 
             {/* Onboarding banner — shown when no AI key is configured */}
             {showKeyBanner && (
               <div
-                className="mb-5 rounded-2xl border px-5 py-4 flex items-start gap-4"
+                className="mb-5 rounded-2xl border px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4"
                 style={{ background: "#ffffff", borderColor: "#e5e5e5" }}
               >
-                <div className="text-2xl shrink-0">⚡</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold" style={{ color: "#111111" }}>
-                    Add your Gemini API key to activate the AI engine
-                  </p>
-                  <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
-                    Pegasus is free forever when you bring your own key — no credit card needed.
-                    Gemini 2.0 Flash has a generous free quota.
-                  </p>
+                <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="text-2xl shrink-0">⚡</div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold" style={{ color: "#111111" }}>
+                      Add your Gemini API key to activate the AI engine
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ color: "var(--ink-muted)" }}>
+                      Pegasus is free forever when you bring your own key — no credit card needed.
+                      Gemini 2.0 Flash has a generous free quota.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 pl-9 sm:pl-0">
                   <Link
                     href="/settings?setup=1"
-                    className="text-[12px] font-medium rounded-full px-4 py-1.5 text-white transition-colors"
+                    className="text-[12px] font-medium rounded-full px-4 py-1.5 text-white transition-colors whitespace-nowrap"
                     style={{ background: "#111111" }}
                   >
                     Add key →
