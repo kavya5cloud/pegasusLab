@@ -3,7 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import type { Blueprint, Gap, Project, SitePlanFile, TaskType } from "./types";
+import type { Blueprint, Gap, Project, SiteFile, SitePlanFile, TaskType } from "./types";
 
 // ─── Backend selection ────────────────────────────────────────────────────────
 
@@ -434,7 +434,10 @@ HARD CONSTRAINTS — the file must run in a Vite + React sandbox with zero error
 - Style with Tailwind utility classes (the CDN is loaded). Aim for a polished, modern, cohesive design: real spacing, hover states, a consistent accent color.
 - No fetch/network calls, no localStorage. All data comes from src/data/mock.js with realistic, domain-specific sample values.
 - For images use https://picsum.photos/seed/<word>/<w>/<h> URLs or pure CSS blocks.
-- Interactive where it matters: working forms with validation states, filters, tabs, modals — using React state only.`;
+- Interactive where it matters: working forms with validation states, filters, tabs, modals — using React state only.
+- src/styles.css must be PLAIN CSS only — no @tailwind, @apply or other build directives (Tailwind is loaded via CDN, there is no build step).
+- CONSISTENCY IS THE #1 FAILURE MODE. When "Already written files" are provided below: import ONLY export names that appear in them; match the exact data field names and shapes shown in src/data/mock.js; call components with the exact props their signatures show.
+- Be defensive: destructure props with default values, guard possibly-missing data with ?. and ?? fallbacks, and never call methods like .toFixed()/.map() on values that could be undefined.`;
 
 const CHAT_SYSTEM = `You are Pegasus, the build intelligence inside pegasus lab. You orchestrate context — not just generate code.
 
@@ -989,18 +992,45 @@ function siteContextSlim(project: Project): string {
   );
 }
 
+/**
+ * Interface summaries of already-generated files, fed forward into every
+ * subsequent call. This is what keeps separately generated files agreeing:
+ * data files are included nearly whole (they are the shared contract —
+ * export names AND field shapes), other files just imports + signature.
+ */
+function writtenContext(written: SiteFile[]): string {
+  if (written.length === 0) return "";
+  const parts: string[] = [];
+  let budget = 9000;
+  for (const w of written) {
+    const isData = w.path.startsWith("src/data/");
+    const lines = w.code.split("\n");
+    const excerpt = isData
+      ? lines.slice(0, 120).join("\n")
+      : lines.slice(0, 14).join("\n");
+    const block = `--- ${w.path}${isData ? "" : " (top of file)"} ---\n${excerpt}`;
+    if (block.length > budget) break;
+    budget -= block.length;
+    parts.push(block);
+  }
+  return parts.join("\n\n");
+}
+
 export async function generateSiteFile(
   project: Project,
   plan: SitePlanFile[],
   file: SitePlanFile,
-  keys: OverrideKeys = {}
+  keys: OverrideKeys = {},
+  written: SiteFile[] = []
 ): Promise<string> {
   const manifest = plan.map((f) => `- ${f.path}: ${f.purpose}`).join("\n");
+  const ctx = writtenContext(written);
   const user = [
     `# App\n${siteContextSlim(project)}`,
     `# Site manifest (the only files that exist)\n${manifest}`,
+    ctx ? `# Already written files — import only these exports, match these shapes and props exactly\n${ctx}` : "",
     `# Your file\nWrite the complete contents of ${file.path}.\nPurpose: ${file.purpose}`,
-  ].join("\n\n");
+  ].filter(Boolean).join("\n\n");
 
   let code = stripCodeFences(await completeText(SITE_FILE_SYSTEM, user, keys, 8000));
 

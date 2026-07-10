@@ -29,6 +29,20 @@ const PHASE_LABEL: Record<Phase, string> = {
 
 type FileStatus = "pending" | "generating" | "done";
 
+/**
+ * Generation order matters: shared contracts first, consumers after, so each
+ * file can be fed the interfaces of everything it imports.
+ * styles → data (the shared contract) → components → pages → App.jsx last.
+ */
+function generationOrder(path: string): number {
+  if (path === "src/styles.css") return 0;
+  if (path.startsWith("src/data/")) return 1;
+  if (path.startsWith("src/components/")) return 2;
+  if (path.startsWith("src/pages/")) return 3;
+  if (path === "src/App.jsx") return 4;
+  return 2;
+}
+
 export default function SiteBuilder({
   project,
   onClose,
@@ -90,7 +104,9 @@ export default function SiteBuilder({
           const planData = await planRes.json();
           if (!planRes.ok) throw new Error(planData.error ?? "Site planning failed");
           if (cancelled.current) return;
-          sitePlan = planData.plan as SitePlanFile[];
+          sitePlan = (planData.plan as SitePlanFile[])
+            .slice()
+            .sort((a, b) => generationOrder(a.path) - generationOrder(b.path));
           setPlan(sitePlan);
           setStatuses(Object.fromEntries(sitePlan.map((f) => [f.path, "pending" as FileStatus])));
 
@@ -107,7 +123,9 @@ export default function SiteBuilder({
               const res = await fetch(`/api/projects/${project.id}/site/file`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", ...userApiHeaders() },
-                body: JSON.stringify({ plan: sitePlan, file }),
+                // written: files generated so far — the server feeds their
+                // interfaces into this file's prompt to prevent drift.
+                body: JSON.stringify({ plan: sitePlan, file, written: siteFiles }),
               });
               const data = await res.json();
               if (res.ok) {

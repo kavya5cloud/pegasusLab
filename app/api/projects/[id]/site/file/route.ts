@@ -3,7 +3,7 @@ import { friendlyAIError, generateSiteFile, isDemoMode } from "@/lib/claude";
 import { demoSiteFiles } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
-import type { SitePlanFile } from "@/lib/types";
+import type { SiteFile, SitePlanFile } from "@/lib/types";
 
 export const maxDuration = 120;
 
@@ -25,6 +25,13 @@ export async function POST(
   const plan: SitePlanFile[] = Array.isArray(body.plan) ? body.plan : [];
   const file: SitePlanFile | undefined =
     body.file && typeof body.file.path === "string" ? body.file : undefined;
+  // Files generated earlier in this build — fed forward so this file agrees
+  // with their exports, data shapes and prop interfaces.
+  const written: SiteFile[] = Array.isArray(body.written)
+    ? body.written.filter(
+        (w: SiteFile) => w && typeof w.path === "string" && typeof w.code === "string"
+      )
+    : [];
   if (!file || plan.length === 0) {
     return NextResponse.json({ error: "plan and file are required" }, { status: 400 });
   }
@@ -44,7 +51,7 @@ export async function POST(
   }
 
   try {
-    const code = await generateSiteFile(project, plan, file, overrideKeys);
+    const code = await generateSiteFile(project, plan, file, overrideKeys, written);
     return NextResponse.json({ code });
   } catch (err) {
     const { message, status } = friendlyAIError(err);
