@@ -16,7 +16,8 @@ export function siteToFiles(project: Project): ShipFile[] {
   if (!site || site.files.length === 0) return [];
 
   const files = new Map<string, string>();
-  for (const f of [...siteStaticFiles(project.name), ...site.files]) {
+  const fonts = site.tokens?.typography?.fontFamilies ?? [];
+  for (const f of [...siteStaticFiles(project.name, fonts), ...site.files]) {
     files.set(f.path, f.code);
   }
 

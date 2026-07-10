@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { friendlyAIError, generateSitePlan, isDemoMode } from "@/lib/claude";
+import { extractDesignTokens, friendlyAIError, generateSitePlan, isDemoMode } from "@/lib/claude";
 import { demoSitePlan } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
@@ -27,12 +27,18 @@ export async function POST(
   };
 
   if (isDemoMode() && !overrideKeys.anthropic && !overrideKeys.google && !overrideKeys.ollamaUrl) {
-    return NextResponse.json({ plan: demoSitePlan(), demo: true });
+    return NextResponse.json({ plan: demoSitePlan(), tokens: null, demo: true });
   }
 
   try {
-    const plan = await generateSitePlan(project, overrideKeys);
-    return NextResponse.json({ plan, demo: false });
+    // Design DNA first: if the board has reference screenshots, a vision pass
+    // extracts their exact style so the whole site replicates it.
+    const tokens = await extractDesignTokens(project, overrideKeys).catch((err) => {
+      console.warn("[site/plan] design token extraction failed:", err);
+      return null;
+    });
+    const plan = await generateSitePlan(project, overrideKeys, tokens);
+    return NextResponse.json({ plan, tokens, demo: false });
   } catch (err) {
     const { message, status } = friendlyAIError(err);
     return NextResponse.json({ error: message }, { status });

@@ -3,7 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import type { Blueprint, Gap, Project, SiteFile, SitePlanFile, TaskType } from "./types";
+import type { Blueprint, DesignTokens, Gap, Project, SiteFile, SitePlanFile, TaskType } from "./types";
 
 // ─── Backend selection ────────────────────────────────────────────────────────
 
@@ -406,6 +406,22 @@ HARD CONSTRAINTS — the file must run in a bare Vite + React sandbox with zero 
 - Build a focused, INTERACTIVE demo of the gap's solution — not the whole app. (Auth gap → a working sign-in form with validation + success states; pagination gap → a paginated table with sample rows and working page controls; billing gap → a pricing/checkout mock with selectable plans.)
 
 The component must render immediately and be visually impressive.`;
+
+const DESIGN_TOKENS_SYSTEM = `You are a forensic design analyst. You are given screenshot(s) of a reference design. Extract its EXACT design DNA so another system can replicate the look pixel-faithfully.
+
+Output STRICT JSON only, no prose:
+{
+  "vibe": "one sentence describing the overall aesthetic",
+  "colors": { "background": "#hex", "surface": "#hex", "text": "#hex", "textMuted": "#hex", "accent": "#hex", "accentText": "#hex", "border": "#hex" },
+  "typography": { "fontFamilies": ["closest Google Font match, most prominent first"], "headingWeight": "e.g. 700", "bodySize": "e.g. 14px", "headingTransform": "none|uppercase" },
+  "shape": { "borderRadius": "e.g. 12px", "buttonRadius": "e.g. 9999px", "shadow": "the CSS box-shadow you observe", "density": "compact|regular|spacious" },
+  "components": { "buttonStyle": "precise description", "cardStyle": "precise description", "navStyle": "precise description", "inputStyle": "precise description" }
+}
+
+Rules:
+- Report the ACTUAL hex values you observe, not idealised ones. Sample carefully: backgrounds are rarely pure #ffffff/#000000.
+- fontFamilies must be real Google Fonts names that visually match (e.g. "Inter", "Playfair Display", "Space Grotesk", "DM Sans").
+- Describe component styles concretely enough to reproduce: borders, fills, hover treatments, letter-spacing, casing.`;
 
 const SITE_PLAN_SYSTEM = `You are the build planner inside Pegasus Lab. Given a Product Blueprint, produce the file manifest for a complete multi-page React website that implements it.
 
@@ -942,6 +958,120 @@ function siteContext(project: Project): string {
   );
 }
 
+// ─── Design DNA extraction (vision) ───────────────────────────────────────────
+
+const DesignTokensSchema = z.object({
+  vibe: z.string(),
+  colors: z.object({
+    background: z.string(),
+    surface: z.string(),
+    text: z.string(),
+    textMuted: z.string(),
+    accent: z.string(),
+    accentText: z.string(),
+    border: z.string(),
+  }),
+  typography: z.object({
+    fontFamilies: z.array(z.string()).min(1),
+    headingWeight: z.string(),
+    bodySize: z.string(),
+    headingTransform: z.string().optional(),
+  }),
+  shape: z.object({
+    borderRadius: z.string(),
+    buttonRadius: z.string(),
+    shadow: z.string(),
+    density: lenientEnum(["compact", "regular", "spacious"], "regular"),
+  }),
+  components: z.object({
+    buttonStyle: z.string(),
+    cardStyle: z.string(),
+    navStyle: z.string(),
+    inputStyle: z.string(),
+  }),
+});
+
+function imageCards(project: Project): { mediaType: string; data: string }[] {
+  const out: { mediaType: string; data: string }[] = [];
+  for (const item of project.items) {
+    if (item.kind !== "image" || !item.dataUrl) continue;
+    const m = item.dataUrl.match(/^data:(image\/(?:png|jpeg|gif|webp));base64,(.+)$/);
+    if (m && m[2].length < 5_000_000) out.push({ mediaType: m[1], data: m[2] });
+  }
+  return out.slice(0, 4);
+}
+
+/**
+ * Extracts the design DNA from the user's screenshots so generated sites
+ * replicate the reference design instead of inventing their own look.
+ * Returns null when the project has no images or the backend lacks vision.
+ */
+export async function extractDesignTokens(
+  project: Project,
+  keys: OverrideKeys = {}
+): Promise<DesignTokens | null> {
+  const images = imageCards(project);
+  if (images.length === 0) return null;
+
+  const backend = resolveBackend(keys);
+  const ask =
+    "Extract the design DNA from the attached reference design screenshot(s). Output the JSON now.";
+
+  let raw = "";
+  if (backend === "anthropic") {
+    const res = await anthropicClient(keys.anthropic).messages.create({
+      model: routeModel("design-analysis"),
+      max_tokens: 2000,
+      system: DESIGN_TOKENS_SYSTEM,
+      messages: [{
+        role: "user",
+        content: [
+          ...images.map((img) => ({
+            type: "image" as const,
+            source: { type: "base64" as const, media_type: img.mediaType as "image/png", data: img.data },
+          })),
+          { type: "text" as const, text: ask },
+        ],
+      }],
+    });
+    raw = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
+  } else if (backend === "gemini") {
+    const res = await geminiClient(keys.google).models.generateContent({
+      model: geminiModel(),
+      contents: [{
+        role: "user",
+        parts: [
+          { text: `${DESIGN_TOKENS_SYSTEM}\n\n${ask}` },
+          ...images.map((img) => ({ inlineData: { mimeType: img.mediaType, data: img.data } })),
+        ],
+      }],
+    });
+    raw = res.text ?? "";
+  } else {
+    // Groq/Ollama text models can't see the design — skip rather than invent.
+    return null;
+  }
+
+  try {
+    return DesignTokensSchema.parse(JSON.parse(stripCodeFences(raw)));
+  } catch (err) {
+    console.warn("[design] token extraction unparseable — continuing without:", err);
+    return null;
+  }
+}
+
+/** Renders tokens as hard constraints for the plan/file prompts. */
+function tokensPromptBlock(tokens: DesignTokens | null | undefined): string {
+  if (!tokens) return "";
+  return `# Design DNA — extracted from the user's reference design. REPLICATE IT EXACTLY.
+This overrides all default styling. Use these literal values — do not substitute your own palette or fonts:
+${JSON.stringify(tokens, null, 1)}
+Hard rules:
+- Use the exact hex colours above (arbitrary Tailwind values like bg-[${tokens.colors.background}] text-[${tokens.colors.text}]).
+- Set font-family to "${tokens.typography.fontFamilies[0]}" (it is loaded via Google Fonts) on body/headings as observed.
+- Apply the observed radii, shadows, density and component treatments everywhere (buttons, cards, nav, inputs).`;
+}
+
 const SitePlanSchema = z.object({
   files: z
     .array(z.object({ path: z.string(), purpose: z.string() }))
@@ -951,11 +1081,16 @@ const SitePlanSchema = z.object({
 
 export async function generateSitePlan(
   project: Project,
-  keys: OverrideKeys = {}
+  keys: OverrideKeys = {},
+  tokens: DesignTokens | null = null
 ): Promise<SitePlanFile[]> {
   const raw = await completeText(
     SITE_PLAN_SYSTEM,
-    `# Product Blueprint\n${siteContext(project)}\n\nProduce the file manifest JSON now.`,
+    [
+      `# Product Blueprint\n${siteContext(project)}`,
+      tokensPromptBlock(tokens),
+      "Produce the file manifest JSON now.",
+    ].filter(Boolean).join("\n\n"),
     keys,
     4000
   );
@@ -1023,12 +1158,14 @@ export async function generateSiteFile(
   plan: SitePlanFile[],
   file: SitePlanFile,
   keys: OverrideKeys = {},
-  written: SiteFile[] = []
+  written: SiteFile[] = [],
+  tokens: DesignTokens | null = null
 ): Promise<string> {
   const manifest = plan.map((f) => `- ${f.path}: ${f.purpose}`).join("\n");
   const ctx = writtenContext(written);
   const user = [
     `# App\n${siteContextSlim(project)}`,
+    tokensPromptBlock(tokens),
     `# Site manifest (the only files that exist)\n${manifest}`,
     ctx ? `# Already written files — import only these exports, match these shapes and props exactly\n${ctx}` : "",
     `# Your file\nWrite the complete contents of ${file.path}.\nPurpose: ${file.purpose}`,

@@ -311,9 +311,48 @@ export interface SiteFile {
   code: string;
 }
 
+/**
+ * Design DNA extracted from user-provided screenshots/designs by a vision
+ * pass. Fed verbatim into every site-generation call so the output copies
+ * the reference design — colours, fonts, spacing, component styles.
+ */
+export interface DesignTokens {
+  /** Overall aesthetic in a sentence, e.g. "dark, glassy SaaS with neon accents" */
+  vibe: string;
+  colors: {
+    background: string;
+    surface: string;
+    text: string;
+    textMuted: string;
+    accent: string;
+    accentText: string;
+    border: string;
+  };
+  typography: {
+    /** Google-Fonts-loadable family names, most prominent first */
+    fontFamilies: string[];
+    headingWeight: string;
+    bodySize: string;
+    headingTransform?: string;
+  };
+  shape: {
+    borderRadius: string;
+    buttonRadius: string;
+    shadow: string;
+    density: "compact" | "regular" | "spacious";
+  };
+  components: {
+    buttonStyle: string;
+    cardStyle: string;
+    navStyle: string;
+    inputStyle: string;
+  };
+}
+
 export interface GeneratedSite {
   plan: SitePlanFile[];
   files: SiteFile[];
+  tokens?: DesignTokens | null;
   generatedAt: string;
 }
 

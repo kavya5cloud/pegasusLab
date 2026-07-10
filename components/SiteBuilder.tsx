@@ -6,7 +6,12 @@ import { siteStaticFiles, siteTree } from "@/lib/site-scaffold";
 import { userApiHeaders } from "@/lib/auth";
 import { Icon } from "./icons";
 import ShipPanel from "./ShipPanel";
-import type { GeneratedSite, Project, SiteFile, SitePlanFile } from "@/lib/types";
+import type { DesignTokens, GeneratedSite, Project, SiteFile, SitePlanFile } from "@/lib/types";
+
+/** Fonts to load in the scaffold, from the extracted design DNA. */
+function tokenFonts(tokens: DesignTokens | null | undefined): string[] {
+  return tokens?.typography?.fontFamilies ?? [];
+}
 
 type Phase =
   | "planning"
@@ -63,6 +68,7 @@ export default function SiteBuilder({
   const [rebuildNonce, setRebuildNonce] = useState(0);
   const [shipOpen, setShipOpen] = useState(false);
   const [waitingSecs, setWaitingSecs] = useState(0);
+  const [tokens, setTokens] = useState<DesignTokens | null>(null);
 
   const cancelled = useRef(false);
   const devProcRef = useRef<{ kill: () => void } | null>(null);
@@ -85,14 +91,17 @@ export default function SiteBuilder({
       try {
         let sitePlan: SitePlanFile[];
         let siteFiles: SiteFile[];
+        let siteTokens: DesignTokens | null = null;
 
         const existing = rebuildNonce === 0 ? project.site : undefined;
         if (existing && existing.files.length > 0) {
           // Reopen a previously generated site without regenerating.
           sitePlan = existing.plan;
           siteFiles = existing.files;
+          siteTokens = existing.tokens ?? null;
           setPlan(sitePlan);
           setFiles(siteFiles);
+          setTokens(siteTokens);
           setStatuses(Object.fromEntries(sitePlan.map((f) => [f.path, "done" as FileStatus])));
         } else {
           // 1. Plan
@@ -104,6 +113,8 @@ export default function SiteBuilder({
           const planData = await planRes.json();
           if (!planRes.ok) throw new Error(planData.error ?? "Site planning failed");
           if (cancelled.current) return;
+          siteTokens = (planData.tokens as DesignTokens | null) ?? null;
+          setTokens(siteTokens);
           sitePlan = (planData.plan as SitePlanFile[])
             .slice()
             .sort((a, b) => generationOrder(a.path) - generationOrder(b.path));
@@ -125,7 +136,7 @@ export default function SiteBuilder({
                 headers: { "Content-Type": "application/json", ...userApiHeaders() },
                 // written: files generated so far — the server feeds their
                 // interfaces into this file's prompt to prevent drift.
-                body: JSON.stringify({ plan: sitePlan, file, written: siteFiles }),
+                body: JSON.stringify({ plan: sitePlan, file, written: siteFiles, tokens: siteTokens }),
               });
               const data = await res.json();
               if (res.ok) {
@@ -153,6 +164,7 @@ export default function SiteBuilder({
           const site: GeneratedSite = {
             plan: sitePlan,
             files: siteFiles,
+            tokens: siteTokens,
             generatedAt: new Date().toISOString(),
           };
           await fetch(`/api/projects/${project.id}`, {
@@ -167,7 +179,7 @@ export default function SiteBuilder({
         setPhase("booting");
         const wc = await getContainer();
         if (cancelled.current) return;
-        await wc.mount(siteTree(project.name, siteFiles));
+        await wc.mount(siteTree(project.name, siteFiles, tokenFonts(siteTokens)));
         if (cancelled.current) return;
 
         setPhase("installing");
@@ -214,7 +226,7 @@ export default function SiteBuilder({
   async function downloadZip() {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
-    for (const f of [...siteStaticFiles(project.name), ...files]) {
+    for (const f of [...siteStaticFiles(project.name, tokenFonts(tokens)), ...files]) {
       zip.file(f.path, f.code);
     }
     const blob = await zip.generateAsync({ type: "blob" });

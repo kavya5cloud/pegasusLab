@@ -35,13 +35,26 @@ export default defineConfig({
 });
 `;
 
-export function siteIndexHtml(title: string): string {
+/** Google Fonts stylesheet link for the design-DNA font families. */
+function fontLinks(fonts: string[]): string {
+  const clean = fonts
+    .map((f) => f.trim())
+    .filter((f) => /^[A-Za-z0-9 ]{2,40}$/.test(f))
+    .slice(0, 3);
+  if (clean.length === 0) return "";
+  const families = clean
+    .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700;800`)
+    .join("&");
+  return `\n    <link rel="preconnect" href="https://fonts.googleapis.com" />\n    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n    <link href="https://fonts.googleapis.com/css2?${families}&display=swap" rel="stylesheet" />`;
+}
+
+export function siteIndexHtml(title: string, fonts: string[] = []): string {
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${title.replace(/</g, "&lt;")}</title>
+    <title>${title.replace(/</g, "&lt;")}</title>${fontLinks(fonts)}
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
@@ -98,19 +111,19 @@ npm run build
 }
 
 /** Files every generated site ships with, independent of the AI output. */
-export function siteStaticFiles(projectName: string): SiteFile[] {
+export function siteStaticFiles(projectName: string, fonts: string[] = []): SiteFile[] {
   return [
     { path: "package.json", code: SITE_PACKAGE_JSON },
     { path: "vite.config.js", code: SITE_VITE_CONFIG },
-    { path: "index.html", code: siteIndexHtml(projectName) },
+    { path: "index.html", code: siteIndexHtml(projectName, fonts) },
     { path: "src/main.jsx", code: SITE_MAIN_JSX },
     { path: "README.md", code: siteReadme(projectName) },
   ];
 }
 
 /** Merge static scaffold + generated files into a WebContainer tree. */
-export function siteTree(projectName: string, generated: SiteFile[]): FileSystemTree {
-  const all: SiteFile[] = [...siteStaticFiles(projectName), ...generated];
+export function siteTree(projectName: string, generated: SiteFile[], fonts: string[] = []): FileSystemTree {
+  const all: SiteFile[] = [...siteStaticFiles(projectName, fonts), ...generated];
   // Guarantee styles.css exists since main.jsx imports it.
   if (!all.some((f) => f.path === "src/styles.css")) {
     all.push({ path: "src/styles.css", code: SITE_BASE_CSS });

@@ -3,7 +3,7 @@ import { friendlyAIError, generateSiteFile, isDemoMode } from "@/lib/claude";
 import { demoSiteFiles } from "@/lib/demo";
 import { getProject } from "@/lib/store";
 import { getOwner } from "@/lib/session";
-import type { SiteFile, SitePlanFile } from "@/lib/types";
+import type { DesignTokens, SiteFile, SitePlanFile } from "@/lib/types";
 
 export const maxDuration = 120;
 
@@ -32,6 +32,9 @@ export async function POST(
         (w: SiteFile) => w && typeof w.path === "string" && typeof w.code === "string"
       )
     : [];
+  // Design DNA extracted by the plan step — every file must replicate it.
+  const tokens: DesignTokens | null =
+    body.tokens && typeof body.tokens === "object" ? body.tokens : null;
   if (!file || plan.length === 0) {
     return NextResponse.json({ error: "plan and file are required" }, { status: 400 });
   }
@@ -51,7 +54,7 @@ export async function POST(
   }
 
   try {
-    const code = await generateSiteFile(project, plan, file, overrideKeys, written);
+    const code = await generateSiteFile(project, plan, file, overrideKeys, written, tokens);
     return NextResponse.json({ code });
   } catch (err) {
     const { message, status } = friendlyAIError(err);
