@@ -753,7 +753,9 @@ export function streamGapCode(project: Project, gap: Gap, keys: OverrideKeys = {
 // ─── Live preview (self-contained App.jsx) ───────────────────────────────────
 
 function stripCodeFences(s: string): string {
-  const t = s.trim();
+  // Gemini occasionally leaks special-token text like "<ctrl63>" into
+  // output — one poisoned any file's syntax in production testing.
+  const t = s.replace(/<ctrl\d+>/g, "").trim();
   const fenced = t.match(/^```[a-zA-Z]*\n([\s\S]*?)```\s*$/);
   return (fenced ? fenced[1] : t).trim();
 }
