@@ -59,7 +59,7 @@ function blueprintToMarkdown(name: string, bp: import("@/lib/types").Blueprint):
     bp.userFlows.forEach((flow) => {
       lines.push(`### ${flow.name}`, `*Actor: ${flow.actor}*`, "");
       flow.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
-      lines.push("", `✓ ${flow.outcome}`, "");
+      lines.push("", `**Outcome:** ${flow.outcome}`, "");
     });
   }
 
@@ -76,7 +76,7 @@ function blueprintToMarkdown(name: string, bp: import("@/lib/types").Blueprint):
     const api = bp.apiArchitecture;
     lines.push("## API Architecture", "", `**Style:** ${api.style} · **Auth:** ${api.authStrategy}`, "");
     lines.push("| Method | Path | Description | Auth |", "|--------|------|-------------|------|");
-    api.endpoints.forEach((ep) => lines.push(`| ${ep.method} | \`${ep.path}\` | ${ep.description} | ${ep.auth ? "✓" : "—"} |`));
+    api.endpoints.forEach((ep) => lines.push(`| ${ep.method} | \`${ep.path}\` | ${ep.description} | ${ep.auth ? "Yes" : "No"} |`));
     lines.push("", `*Rate limiting:* ${api.rateLimitingNotes}`, "");
   }
 
@@ -418,7 +418,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
           body: JSON.stringify({ generated, ...(closed ? { blueprint: closed } : {}) }),
         }).catch(() => {});
         const openCount = closed ? closed.gaps.filter((g) => !g.resolved).length : 0;
-        toast(`✓ "${gap.title}" closed — ${openCount} gap${openCount !== 1 ? "s" : ""} remaining`);
+        toast(`"${gap.title}" closed — ${openCount} gap${openCount !== 1 ? "s" : ""} remaining`);
       }
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) {
@@ -871,7 +871,7 @@ export default function Workspace({ projectId }: { projectId: string }) {
                           <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono" style={{ borderBottom: i < bp.apiArchitecture!.endpoints.length - 1 ? "1px solid var(--line)" : undefined, background: i % 2 === 0 ? "transparent" : "var(--panel-2)" }}>
                             <span style={{ color: ep.method === "GET" ? "var(--ok)" : ep.method === "DELETE" ? "var(--bad)" : "var(--warn)", minWidth: 44 }}>{ep.method}</span>
                             <span className="flex-1 truncate">{ep.path}</span>
-                            {ep.auth && <span style={{ color: "var(--muted)" }}>🔒</span>}
+                            {ep.auth && <span style={{ color: "var(--muted)" }} title="Requires authentication"><Icon name="lock" size={11} strokeWidth={1.9} /></span>}
                           </div>
                         ))}
                       </div>

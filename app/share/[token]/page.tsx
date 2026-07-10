@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { use } from "react";
+import { Icon } from "@/components/icons";
 import type { Blueprint } from "@/lib/types";
 
 interface SharedData {
@@ -329,7 +330,7 @@ export default function SharePage({ params }: { params: Promise<{ token: string 
                           <td className="px-4 py-1.5 font-mono font-semibold" style={{ color: methodColor[ep.method] ?? "#333" }}>{ep.method}</td>
                           <td className="px-4 py-1.5 font-mono text-neutral-700">{ep.path}</td>
                           <td className="px-4 py-1.5 text-neutral-600">{ep.description}</td>
-                          <td className="px-4 py-1.5 text-center">{ep.auth ? "✓" : "—"}</td>
+                          <td className="px-4 py-1.5 text-center">{ep.auth ? <span className="inline-flex"><Icon name="check" size={13} strokeWidth={2.4} /></span> : "—"}</td>
                         </tr>
                       );
                     })}

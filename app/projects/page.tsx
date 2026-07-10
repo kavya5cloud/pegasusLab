@@ -480,7 +480,9 @@ export default function Dashboard() {
                 style={{ background: "#ffffff", borderColor: "#e5e5e5" }}
               >
                 <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
-                  <div className="text-2xl shrink-0">⚡</div>
+                  <div className="shrink-0 mt-0.5" style={{ color: "#111111" }}>
+                    <Icon name="bolt" size={20} strokeWidth={1.8} />
+                  </div>
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: "#111111" }}>
                       Add your Gemini API key to activate the AI engine
@@ -514,7 +516,9 @@ export default function Dashboard() {
             {limitHit && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.4)" }}>
                 <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
-                  <div className="text-4xl mb-4">🚀</div>
+                  <div className="flex justify-center mb-4" style={{ color: "#111111" }}>
+                    <Icon name="rocket" size={34} strokeWidth={1.6} />
+                  </div>
                   <h2 className="text-xl font-semibold mb-2">Weekly limit reached</h2>
                   <p className="text-[13px] mb-6" style={{ color: "var(--ink-muted)" }}>
                     The free plan includes <strong>2 new projects per week</strong>. Your allowance resets in 7 days, or upgrade for unlimited builds.

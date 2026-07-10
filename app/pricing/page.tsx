@@ -138,7 +138,8 @@ export default function PricingPage() {
         <div className="relative z-10 text-center px-6 pt-10 pb-20 md:pt-14 md:pb-24 max-w-2xl mx-auto">
           {welcome ? (
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur text-white text-[13px] font-medium rounded-full px-4 py-1.5 mb-7">
-              🎉 Account created — pick your plan to get started
+              <Icon name="check" size={13} strokeWidth={2.4} />
+              Account created — pick your plan to get started
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5 bg-black/35 backdrop-blur text-white/90 text-[11px] font-mono uppercase tracking-widest rounded-full px-3 py-1 mb-7">

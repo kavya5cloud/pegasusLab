@@ -1,6 +1,7 @@
 "use client";
 
 import type { Gap, GapSeverity } from "@/lib/types";
+import { Icon } from "./icons";
 
 const SEVERITY_ORDER: Record<GapSeverity, number> = {
   critical: 0,
@@ -115,7 +116,10 @@ export default function GapPanel({
           className="rounded-lg p-3 text-sm text-center"
           style={{ background: "rgba(52,211,153,0.08)", border: "1px solid var(--ok)", color: "var(--ok)" }}
         >
-          ✓ All gaps closed — every node is built.
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="check" size={13} strokeWidth={2.4} />
+            All gaps closed — every node is built.
+          </span>
         </div>
       )}
 
@@ -136,10 +140,10 @@ export default function GapPanel({
               title="Regenerate code for this gap"
             >
               <span
-                className="flex items-center justify-center h-4 w-4 rounded-full shrink-0 text-[10px]"
+                className="flex items-center justify-center h-4 w-4 rounded-full shrink-0"
                 style={{ background: "var(--ok)", color: "#fff" }}
               >
-                ✓
+                <Icon name="check" size={9} strokeWidth={3} />
               </span>
               <span className="text-xs line-through" style={{ color: "var(--muted)" }}>
                 {gap.title}

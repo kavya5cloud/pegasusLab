@@ -322,7 +322,9 @@ export default function SiteBuilder({
                 title={f.purpose}
               >
                 {st === "done" ? (
-                  <span style={{ color: "var(--ok)" }}>✓</span>
+                  <span className="shrink-0" style={{ color: "var(--ok)" }}>
+                    <Icon name="check" size={12} strokeWidth={2.6} />
+                  </span>
                 ) : st === "generating" ? (
                   <span
                     className="inline-block h-2.5 w-2.5 rounded-full border-2 animate-spin shrink-0"

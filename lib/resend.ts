@@ -14,7 +14,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
   return getResend().emails.send({
     from: FROM,
     to,
-    subject: "Welcome to Pegasus Lab ✦",
+    subject: "Welcome to Pegasus Lab",
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -25,7 +25,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
       <img src="https://pegasuslab.ai/pegasuslogo.png" alt="pegasus lab." width="120" style="height:auto;filter:brightness(0) invert(1);opacity:0.9;" />
     </div>
     <div style="padding:36px 40px;">
-      <h1 style="margin:0 0 12px;font-size:26px;font-weight:600;color:#0a0a0a;">Hey ${first} 👋</h1>
+      <h1 style="margin:0 0 12px;font-size:26px;font-weight:600;color:#0a0a0a;">Hey ${first}</h1>
       <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4a4a4a;">
         Welcome to <strong>Pegasus Lab</strong> — the intelligence layer between your ideas and working software.
       </p>
