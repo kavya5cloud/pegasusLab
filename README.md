@@ -19,7 +19,7 @@ Build production-ready software with AI-powered planning, blueprint generation, 
 
 #  What is Pegasus Lab?
 
-Pegasus Lab is an AI-native software engineering platform that transforms scattered ideas into production-ready applications.
+Pegasus Lab is an AI-native software engineering platform that  transforms scattered ideas into production-ready applications.
 
 Instead of simply generating code, Pegasus understands your product—from documents and conversations to architecture and requirements—then creates an intelligent blueprint before implementation begins.
 
