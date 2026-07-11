@@ -8,11 +8,6 @@ import { Icon } from "./icons";
 import ShipPanel from "./ShipPanel";
 import type { DesignTokens, GeneratedSite, Project, SiteFile, SitePlanFile } from "@/lib/types";
 
-/** Fonts to load in the scaffold, from the extracted design DNA. */
-function tokenFonts(tokens: DesignTokens | null | undefined): string[] {
-  return tokens?.typography?.fontFamilies ?? [];
-}
-
 type Phase =
   | "planning"
   | "generating"
@@ -77,7 +72,7 @@ export default function SiteBuilder({
 
   const log = useCallback((line: string) => {
     const clean = line.replace(/\[[0-9;]*[a-zA-Z]/g, "").replace(/[\r]/g, "");
-    if (!clean.trim()) return;
+    if (!clean.trim() || /^[\s\\|/-]+$/.test(clean)) return;
     setLogs((prev) => [...prev.slice(-300), clean]);
   }, []);
 
@@ -187,7 +182,7 @@ export default function SiteBuilder({
         setPhase("booting");
         const wc = await getContainer();
         if (cancelled.current) return;
-        await wc.mount(siteTree(project.name, siteFiles, tokenFonts(siteTokens)));
+        await wc.mount(siteTree(project.name, siteFiles, siteTokens));
         if (cancelled.current) return;
 
         setPhase("installing");
@@ -234,7 +229,7 @@ export default function SiteBuilder({
   async function downloadZip() {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
-    for (const f of [...siteStaticFiles(project.name, tokenFonts(tokens)), ...files]) {
+    for (const f of [...siteStaticFiles(project.name, tokens), ...files]) {
       zip.file(f.path, f.code);
     }
     const blob = await zip.generateAsync({ type: "blob" });

@@ -252,6 +252,10 @@ export interface Blueprint {
 
   // Context Graph — connects all artefacts
   contextGraph?: ContextGraph;
+
+  // Cached design-DNA extraction (see DesignCache) — written by the site
+  // plan route after a successful vision pass over the board's images.
+  designCache?: DesignCache;
 }
 
 // ─── Board ────────────────────────────────────────────────────────────────────
@@ -354,6 +358,16 @@ export interface GeneratedSite {
   files: SiteFile[];
   tokens?: DesignTokens | null;
   generatedAt: string;
+}
+
+/**
+ * Cached design extraction keyed by a hash of the board's images, stored on
+ * the blueprint: vision runs once per unique reference design, so rebuilds
+ * and edits never re-spend vision quota and the design survives rate limits.
+ */
+export interface DesignCache {
+  hash: string;
+  tokens: DesignTokens;
 }
 
 // ─── Project ──────────────────────────────────────────────────────────────────

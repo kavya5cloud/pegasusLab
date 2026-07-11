@@ -1078,12 +1078,15 @@ async function extractDesignTokensOnce(
 function tokensPromptBlock(tokens: DesignTokens | null | undefined): string {
   if (!tokens) return "";
   return `# Design DNA — extracted from the user's reference design. REPLICATE IT EXACTLY.
-This overrides all default styling. Use these literal values — do not substitute your own palette or fonts:
-${JSON.stringify(tokens, null, 1)}
+The scaffold has ALREADY compiled this design into src/design-tokens.css (loaded before styles.css). These CSS variables exist and hold the reference design's exact values:
+--color-bg, --color-surface, --color-text, --color-text-muted, --color-accent, --color-accent-text, --color-border, --font-display, --font-body, --heading-weight, --radius, --radius-button, --shadow
+Body background/text colour and heading/body font-families are already applied globally.
+
 Hard rules:
-- Use the exact hex colours above (arbitrary Tailwind values like bg-[${tokens.colors.background}] text-[${tokens.colors.text}]).
-- Set font-family to "${tokens.typography.fontFamilies[0]}" (it is loaded via Google Fonts) on body/headings as observed.
-- Apply the observed radii, shadows, density and component treatments everywhere (buttons, cards, nav, inputs).`;
+- Style through the variables, never hardcoded colours: bg-[var(--color-surface)], text-[var(--color-accent)], border-[var(--color-border)], rounded-[var(--radius)], rounded-[var(--radius-button)] for buttons, shadow-[var(--shadow)].
+- Never use Tailwind's named palette (no bg-blue-500, text-gray-600 etc.) and never invent hex values.
+- Match the observed component treatments and density described here:
+${JSON.stringify({ vibe: tokens.vibe, density: tokens.shape.density, components: tokens.components, headingTransform: tokens.typography.headingTransform }, null, 1)}`;
 }
 
 const SitePlanSchema = z.object({

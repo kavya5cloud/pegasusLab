@@ -1,5 +1,5 @@
 import type { FileSystemTree } from "@webcontainer/api";
-import type { SiteFile } from "./types";
+import type { DesignTokens, SiteFile } from "./types";
 
 // Fixed scaffold for generated websites. Only src/ files are AI-generated;
 // the build setup is ours, so the toolchain can never break.
@@ -35,6 +35,55 @@ export default defineConfig({
 });
 `;
 
+/** Sanitise a value destined for a CSS custom property. */
+function cssSafe(v: string | undefined, fallback: string): string {
+  const s = (v ?? "").trim();
+  if (!s || /[;{}<>]/.test(s) || s.length > 120) return fallback;
+  return s;
+}
+
+/**
+ * Compile the extracted design DNA into deterministic CSS. The design stops
+ * being a prompt suggestion and becomes scaffold-owned infrastructure: even
+ * if the model drifts, the variables hold the reference design's values.
+ * Emitted with sensible neutral defaults when no reference design exists.
+ */
+export function tokensCss(tokens: DesignTokens | null | undefined): string {
+  const c = tokens?.colors;
+  const t = tokens?.typography;
+  const s = tokens?.shape;
+  const display = cssSafe(t?.fontFamilies?.[0], "system-ui");
+  const body = cssSafe(t?.fontFamilies?.[1] ?? t?.fontFamilies?.[0], "system-ui");
+  return `/* design-tokens.css — compiled by Pegasus from the reference design.
+   These variables ARE the design. Components style with var(--token). */
+:root {
+  --color-bg: ${cssSafe(c?.background, "#ffffff")};
+  --color-surface: ${cssSafe(c?.surface, "#f7f7f7")};
+  --color-text: ${cssSafe(c?.text, "#111111")};
+  --color-text-muted: ${cssSafe(c?.textMuted, "#6b6b6b")};
+  --color-accent: ${cssSafe(c?.accent, "#111111")};
+  --color-accent-text: ${cssSafe(c?.accentText, "#ffffff")};
+  --color-border: ${cssSafe(c?.border, "#e5e5e5")};
+  --font-display: "${display}", ui-sans-serif, sans-serif;
+  --font-body: "${body}", ui-sans-serif, sans-serif;
+  --heading-weight: ${cssSafe(t?.headingWeight, "700")};
+  --radius: ${cssSafe(s?.borderRadius, "12px")};
+  --radius-button: ${cssSafe(s?.buttonRadius, "10px")};
+  --shadow: ${cssSafe(s?.shadow, "0 1px 3px rgba(0,0,0,0.08)")};
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--heading-weight);
+  ${tokens?.typography?.headingTransform === "uppercase" ? "text-transform: uppercase;" : ""}
+}
+`;
+}
+
 /** Google Fonts stylesheet link for the design-DNA font families. */
 function fontLinks(fonts: string[]): string {
   const clean = fonts
@@ -69,6 +118,7 @@ export const SITE_MAIN_JSX = `import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
+import "./design-tokens.css";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -111,19 +161,28 @@ npm run build
 }
 
 /** Files every generated site ships with, independent of the AI output. */
-export function siteStaticFiles(projectName: string, fonts: string[] = []): SiteFile[] {
+export function siteStaticFiles(
+  projectName: string,
+  tokens: DesignTokens | null = null
+): SiteFile[] {
+  const fonts = tokens?.typography?.fontFamilies ?? [];
   return [
     { path: "package.json", code: SITE_PACKAGE_JSON },
     { path: "vite.config.js", code: SITE_VITE_CONFIG },
     { path: "index.html", code: siteIndexHtml(projectName, fonts) },
     { path: "src/main.jsx", code: SITE_MAIN_JSX },
+    { path: "src/design-tokens.css", code: tokensCss(tokens) },
     { path: "README.md", code: siteReadme(projectName) },
   ];
 }
 
 /** Merge static scaffold + generated files into a WebContainer tree. */
-export function siteTree(projectName: string, generated: SiteFile[], fonts: string[] = []): FileSystemTree {
-  const all: SiteFile[] = [...siteStaticFiles(projectName, fonts), ...generated];
+export function siteTree(
+  projectName: string,
+  generated: SiteFile[],
+  tokens: DesignTokens | null = null
+): FileSystemTree {
+  const all: SiteFile[] = [...siteStaticFiles(projectName, tokens), ...generated];
   // Guarantee styles.css exists since main.jsx imports it.
   if (!all.some((f) => f.path === "src/styles.css")) {
     all.push({ path: "src/styles.css", code: SITE_BASE_CSS });
