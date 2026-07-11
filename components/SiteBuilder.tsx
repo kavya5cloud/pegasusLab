@@ -69,6 +69,7 @@ export default function SiteBuilder({
   const [shipOpen, setShipOpen] = useState(false);
   const [waitingSecs, setWaitingSecs] = useState(0);
   const [tokens, setTokens] = useState<DesignTokens | null>(null);
+  const [designNotice, setDesignNotice] = useState<string | null>(null);
 
   const cancelled = useRef(false);
   const devProcRef = useRef<{ kill: () => void } | null>(null);
@@ -115,6 +116,13 @@ export default function SiteBuilder({
           if (cancelled.current) return;
           siteTokens = (planData.tokens as DesignTokens | null) ?? null;
           setTokens(siteTokens);
+          if (planData.designSkipped) {
+            setDesignNotice(
+              planData.designSkipped === "rate_limit"
+                ? "Design analysis hit the AI rate limit — building with default styling. Hit Rebuild later to apply your reference design."
+                : "Design analysis failed — building with default styling. Hit Rebuild to retry."
+            );
+          }
           sitePlan = (planData.plan as SitePlanFile[])
             .slice()
             .sort((a, b) => generationOrder(a.path) - generationOrder(b.path));
@@ -328,6 +336,19 @@ export default function SiteBuilder({
           </button>
         </div>
       </div>
+
+      {/* Design notice — the design pass is the USP; never fail it silently */}
+      {designNotice && (
+        <div
+          className="px-4 py-2 text-xs flex items-center justify-between shrink-0"
+          style={{ background: "rgba(180,83,9,0.08)", color: "var(--warn)", borderBottom: "1px solid var(--line)" }}
+        >
+          <span>{designNotice}</span>
+          <button onClick={() => setDesignNotice(null)} style={{ color: "var(--muted)" }}>
+            <Icon name="close" size={10} strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex-1 min-h-0 flex">

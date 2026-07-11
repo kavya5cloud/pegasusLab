@@ -33,12 +33,20 @@ export async function POST(
   try {
     // Design DNA first: if the board has reference screenshots, a vision pass
     // extracts their exact style so the whole site replicates it.
-    const tokens = await extractDesignTokens(project, overrideKeys).catch((err) => {
-      console.warn("[site/plan] design token extraction failed:", err);
-      return null;
-    });
+    let tokens = null;
+    let designSkipped: string | null = null;
+    const hasImages = project.items.some((i) => i.kind === "image" && i.dataUrl);
+    if (hasImages) {
+      try {
+        tokens = await extractDesignTokens(project, overrideKeys);
+      } catch (err) {
+        // Don't fail the build over the design pass — but never hide it either.
+        console.warn("[site/plan] design token extraction failed:", err);
+        designSkipped = friendlyAIError(err).status === 429 ? "rate_limit" : "error";
+      }
+    }
     const plan = await generateSitePlan(project, overrideKeys, tokens);
-    return NextResponse.json({ plan, tokens, demo: false });
+    return NextResponse.json({ plan, tokens, designSkipped, demo: false });
   } catch (err) {
     const { message, status } = friendlyAIError(err);
     return NextResponse.json({ error: message }, { status });

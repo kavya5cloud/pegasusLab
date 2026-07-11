@@ -1012,7 +1012,21 @@ export async function extractDesignTokens(
 ): Promise<DesignTokens | null> {
   const images = imageCards(project);
   if (images.length === 0) return null;
+  try {
+    return await extractDesignTokensOnce(project, images, keys);
+  } catch (err) {
+    // One retry on rate limits — the design is the USP, worth waiting for.
+    if (!isRateLimit(err)) throw err;
+    await new Promise((r) => setTimeout(r, retryDelayMs(err)));
+    return extractDesignTokensOnce(project, images, keys);
+  }
+}
 
+async function extractDesignTokensOnce(
+  project: Project,
+  images: { mediaType: string; data: string }[],
+  keys: OverrideKeys
+): Promise<DesignTokens | null> {
   const backend = resolveBackend(keys);
   const ask =
     "Extract the design DNA from the attached reference design screenshot(s). Output the JSON now.";
